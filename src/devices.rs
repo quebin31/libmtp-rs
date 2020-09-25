@@ -148,7 +148,8 @@ pub struct RawDevice {
 impl RawDevice {
     pub fn open(&self) -> Option<MTPDevice> {
         unsafe {
-            let device = ffi::LIBMTP_Open_Raw_Device(&self.inner);
+            let ptr = &self.inner as *const _;
+            let device = ffi::LIBMTP_Open_Raw_Device(ptr as *mut _);
 
             if device.is_null() {
                 None
@@ -160,7 +161,8 @@ impl RawDevice {
 
     pub fn open_uncached(&self) -> Option<MTPDevice> {
         unsafe {
-            let device = ffi::LIBMTP_Open_Raw_Device_Uncached(&self.inner);
+            let ptr = &self.inner as *const _;
+            let device = ffi::LIBMTP_Open_Raw_Device_Uncached(ptr as *mut _);
 
             if device.is_null() {
                 None
