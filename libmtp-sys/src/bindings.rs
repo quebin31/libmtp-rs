@@ -3,7 +3,7 @@
 pub type time_t = libc::time_t;
 pub type timeval = libc::timeval;
 
-pub const LIBMTP_VERSION_STRING: &'static [u8; 7usize] = b"1.1.17\0";
+pub const LIBMTP_VERSION_STRING: &[u8; 7usize] = b"1.1.17\0";
 pub const LIBMTP_DEBUG_NONE: u32 = 0;
 pub const LIBMTP_DEBUG_PTP: u32 = 1;
 pub const LIBMTP_DEBUG_PLST: u32 = 2;

@@ -1,6 +1,11 @@
 const MIN_LIBMTP_VERSION: &str = "1.1.15";
 
 fn main() {
+    if std::env::var("DOCS_RS").is_ok() {
+        // skip binding if building on docs.rs
+        return;
+    }
+
     println!("cargo:rerun-if-changed=libmtp.h");
     if let Err(err) = pkg_config::Config::new()
         .atleast_version(MIN_LIBMTP_VERSION)
