@@ -1,8 +1,13 @@
 [package]
 authors = ["Kevin Del Castillo <quebin31@gmail.com>"]
+categories = ["external-ffi-bindings", "filesystem"]
+description = "Low-level bindings to libmtp C library"
 edition = "2018"
+keywords = ["mtp", "android", "player"]
+license = "MIT"
 name = "libmtp-sys"
-version = "0.1.0"
+repository = "https://github.com/quebin31/libmtp-rs"
+version = "1.1.17-1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,3 +16,4 @@ libc = "0.2.77"
 
 [build-dependencies]
 bindgen = "0.55.1"
+pkg-config = "0.3.18"

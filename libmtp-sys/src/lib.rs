@@ -5,14 +5,3 @@
 pub mod bindings;
 pub use bindings::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn init() {
-        unsafe {
-            LIBMTP_Init();
-        }
-    }
-}
