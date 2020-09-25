@@ -7,7 +7,7 @@ keywords = ["mtp", "android", "player"]
 license = "MIT"
 name = "libmtp-sys"
 repository = "https://github.com/quebin31/libmtp-rs"
-version = "1.1.17-1"
+version = "1.1.17-2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
