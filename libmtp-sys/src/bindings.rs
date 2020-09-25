@@ -2440,11 +2440,11 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn LIBMTP_Open_Raw_Device(arg1: *const LIBMTP_raw_device_t) -> *mut LIBMTP_mtpdevice_t;
+    pub fn LIBMTP_Open_Raw_Device(arg1: *mut LIBMTP_raw_device_t) -> *mut LIBMTP_mtpdevice_t;
 }
 extern "C" {
     pub fn LIBMTP_Open_Raw_Device_Uncached(
-        arg1: *const LIBMTP_raw_device_t,
+        arg1: *mut LIBMTP_raw_device_t,
     ) -> *mut LIBMTP_mtpdevice_t;
 }
 extern "C" {
