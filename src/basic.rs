@@ -1,7 +1,21 @@
-use crate::error::Error;
-use crate::internals::maybe_init;
+use crate::{capabilities::DeviceCap, internals::maybe_init};
+use crate::{error::Error, filetypes::Filetype};
 use libmtp_sys as ffi;
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::mem::MaybeUninit;
+
+pub fn check_specific_device(busno: u32, devno: u32) -> bool {
+    unsafe {
+        let res = ffi::LIBMTP_Check_Specific_Device(busno as i32, devno as i32);
+        res == 1
+    }
+}
+
+#[derive(Debug)]
+pub enum BatteryLevel {
+    OnBattery(u8),
+    OnExternalPower,
+}
 
 #[derive(Debug)]
 pub struct MTPDevice {
@@ -122,6 +136,89 @@ impl MTPDevice {
         }
     }
 
+    pub fn battery_level(&self) -> Result<(BatteryLevel, u8), Error> {
+        unsafe {
+            let mut max_level = 0;
+            let mut cur_level = 0;
+
+            let res = ffi::LIBMTP_Get_Batterylevel(self.inner, &mut max_level, &mut cur_level);
+            if let Some(err) = Error::from_code(res as u32) {
+                Err(err)
+            } else {
+                let cur_level = if cur_level == 0 {
+                    BatteryLevel::OnExternalPower
+                } else {
+                    BatteryLevel::OnBattery(cur_level)
+                };
+
+                Ok((cur_level, max_level))
+            }
+        }
+    }
+
+    pub fn secure_time(&self) -> Result<String, Error> {
+        unsafe {
+            let mut secure_time = std::ptr::null_mut();
+            let res = ffi::LIBMTP_Get_Secure_Time(self.inner, &mut secure_time);
+
+            if let Some(err) = Error::from_code(res as u32) {
+                return Err(err);
+            }
+
+            if secure_time.is_null() {
+                return Err(Error::Unknown);
+            }
+
+            let vec = c_charp_to_u8v!(secure_time);
+            libc::free(secure_time as *mut _);
+            Ok(String::from_utf8(vec)?)
+        }
+    }
+
+    pub fn supported_filetypes(&self) -> Result<Vec<Filetype>, Error> {
+        unsafe {
+            let mut filetypes = std::ptr::null_mut();
+            let mut len = 0;
+
+            let res = ffi::LIBMTP_Get_Supported_Filetypes(self.inner, &mut filetypes, &mut len);
+            if let Some(err) = Error::from_code(res as u32) {
+                return Err(err);
+            }
+
+            if filetypes.is_null() {
+                return Err(Error::Unknown);
+            }
+
+            let mut filetypes_vec = Vec::with_capacity(len as usize);
+            for i in 0..(len as isize) {
+                let ftype = Filetype::from_u16(*filetypes.offset(i)).unwrap();
+                filetypes_vec.push(ftype);
+            }
+
+            libc::free(filetypes as *mut _);
+            Ok(filetypes_vec)
+        }
+    }
+
+    pub fn check_capability(&self, capability: DeviceCap) -> bool {
+        unsafe {
+            let cap_code = capability.to_u32().unwrap();
+            let res = ffi::LIBMTP_Check_Capability(self.inner, cap_code);
+            res != 0
+        }
+    }
+
+    pub fn reset_device(&self) -> Result<(), Error> {
+        unsafe {
+            let res = ffi::LIBMTP_Reset_Device(self.inner);
+            if let Some(err) = Error::from_code(res as u32) {
+                Err(err)
+            } else {
+                Ok(())
+            }
+        }
+    }
+
     pub fn dump_device_info(&self) {
         unsafe {
             ffi::LIBMTP_Dump_Device_Info(self.inner);
@@ -208,6 +305,6 @@ mod tests {
         let mtp_device = devices[0].open_uncached().unwrap();
         println!("{:#?}", mtp_device.manufacturer_name());
         println!("{:#?}", mtp_device.model_name());
-        println!("{:#?}", mtp_device.device_certificate());
+        println!("{:#?}", mtp_device.supported_filetypes());
     }
 }
