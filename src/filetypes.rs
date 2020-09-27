@@ -55,11 +55,10 @@ pub enum Filetype {
 
 impl Display for Filetype {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let ftype = self.to_u32().unwrap();
+        let ftype = self.to_u32().expect("Unexpected Filetype variant?");
         unsafe {
-            let description = ffi::LIBMTP_Get_Filetype_Description(ftype);
-
-            let cstr = CStr::from_ptr(description);
+            let desc = ffi::LIBMTP_Get_Filetype_Description(ftype);
+            let cstr = CStr::from_ptr(desc);
 
             write!(f, "{}", cstr.to_str().unwrap())
         }
