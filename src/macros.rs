@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! c_charp_to_u8v {
     ($ptr:expr) => {{
         let mut u8_vec = Vec::new();
