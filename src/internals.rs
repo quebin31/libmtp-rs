@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::ErrorKind;
 use bitflags::bitflags;
 use libmtp_sys as ffi;
 use std::ffi::CStr;
@@ -24,6 +24,7 @@ bitflags! {
     }
 }
 
+/// Set the internal debug level of libmtp (C library).
 pub fn set_debug(level: DebugLevel) {
     maybe_init();
 
@@ -41,7 +42,8 @@ pub struct DeviceEntry {
     pub device_flags: u32,
 }
 
-pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, Error> {
+/// Get a list of the supported devices.
+pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, ErrorKind> {
     maybe_init();
 
     unsafe {
@@ -51,7 +53,7 @@ pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, Error> {
         let res = ffi::LIBMTP_Get_Supported_Devices_List(&mut devices, &mut len);
 
         if res != 0 {
-            return Err(Error::Unknown);
+            return Err(ErrorKind::Unknown);
         }
 
         let devices_vec = (0..len as isize)
