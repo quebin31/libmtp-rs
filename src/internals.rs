@@ -1,4 +1,4 @@
-use crate::error::ErrorKind;
+use crate::error::Error;
 use bitflags::bitflags;
 use libmtp_sys as ffi;
 use std::ffi::CStr;
@@ -43,7 +43,7 @@ pub struct DeviceEntry {
 }
 
 /// Get a list of the supported devices.
-pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, ErrorKind> {
+pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, Error> {
     maybe_init();
 
     unsafe {
@@ -53,25 +53,25 @@ pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, ErrorKind> {
         let res = ffi::LIBMTP_Get_Supported_Devices_List(&mut devices, &mut len);
 
         if res != 0 {
-            return Err(ErrorKind::Unknown);
+            Err(Error::Unknown)
+        } else {
+            let devices_vec = (0..len as isize)
+                .map(|i| {
+                    let device = &*devices.offset(i);
+                    let vendor = CStr::from_ptr(device.vendor);
+                    let product = CStr::from_ptr(device.product);
+
+                    DeviceEntry {
+                        vendor: vendor.to_str().expect("Invalid UTF-8"),
+                        vendor_id: device.vendor_id,
+                        product: product.to_str().expect("Invalid UTF-8"),
+                        product_id: device.product_id,
+                        device_flags: device.device_flags,
+                    }
+                })
+                .collect();
+
+            Ok(devices_vec)
         }
-
-        let devices_vec = (0..len as isize)
-            .map(|i| {
-                let device = &*devices.offset(i);
-                let vendor = CStr::from_ptr(device.vendor);
-                let product = CStr::from_ptr(device.product);
-
-                DeviceEntry {
-                    vendor: vendor.to_str().expect("Invalid UTF-8"),
-                    vendor_id: device.vendor_id,
-                    product: product.to_str().expect("Invalid UTF-8"),
-                    product_id: device.product_id,
-                    device_flags: device.device_flags,
-                }
-            })
-            .collect();
-
-        Ok(devices_vec)
     }
 }
