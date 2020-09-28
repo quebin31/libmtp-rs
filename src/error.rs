@@ -1,38 +1,26 @@
 use libmtp_sys as ffi;
 use std::string::FromUtf8Error;
-use thiserror::Error;
+use thiserror::Error as ErrorTrait;
 
-#[derive(Debug, Clone, Error)]
-pub enum ErrorKind {
-    #[error("Unknown error!")]
-    Unknown,
-    #[error("")]
+#[derive(Debug, Clone, Copy)]
+pub enum MtpErrorKind {
     General,
-    #[error("")]
-    PTPLayer,
-    #[error("")]
-    USBLayer,
-    #[error("")]
+    PtpLayer,
+    UsbLayer,
     MemoryAllocation,
-    #[error("")]
     NoDeviceAttached,
-    #[error("")]
     StorageFull,
-    #[error("")]
     Connecting,
-    #[error("")]
     Cancelled,
-    #[error("There was an error when converting UTF-8 ({source})")]
-    UTF8Error { source: FromUtf8Error },
 }
 
-impl ErrorKind {
-    pub(crate) fn from_code(error_code: ffi::LIBMTP_error_number_t) -> Option<Self> {
+impl MtpErrorKind {
+    pub(crate) fn from_error_number(error_code: ffi::LIBMTP_error_number_t) -> Option<Self> {
         match error_code {
             ffi::LIBMTP_error_number_t_LIBMTP_ERROR_NONE => None,
             ffi::LIBMTP_error_number_t_LIBMTP_ERROR_GENERAL => Some(Self::General),
-            ffi::LIBMTP_error_number_t_LIBMTP_ERROR_PTP_LAYER => Some(Self::PTPLayer),
-            ffi::LIBMTP_error_number_t_LIBMTP_ERROR_USB_LAYER => Some(Self::USBLayer),
+            ffi::LIBMTP_error_number_t_LIBMTP_ERROR_PTP_LAYER => Some(Self::PtpLayer),
+            ffi::LIBMTP_error_number_t_LIBMTP_ERROR_USB_LAYER => Some(Self::UsbLayer),
             ffi::LIBMTP_error_number_t_LIBMTP_ERROR_MEMORY_ALLOCATION => {
                 Some(Self::MemoryAllocation)
             }
@@ -47,34 +35,44 @@ impl ErrorKind {
     }
 }
 
-impl From<FromUtf8Error> for ErrorKind {
-    fn from(source: FromUtf8Error) -> Self {
-        Self::UTF8Error { source }
+#[derive(Debug, Clone, ErrorTrait)]
+pub enum Error {
+    #[error("Unknown error (possibly a libmtp undocumented error)")]
+    Unknown,
+    #[error("Internal libmtp ({kind:?}): {text}")]
+    MtpError { kind: MtpErrorKind, text: String },
+    #[error("Utf8 error ({source})")]
+    Utf8Error { source: FromUtf8Error },
+}
+
+impl Default for Error {
+    fn default() -> Self {
+        Error::Unknown
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct StackError {
-    pub kind: ErrorKind,
-    pub text: String,
+impl Error {
+    pub(crate) unsafe fn from_latest_error(mut list: *const ffi::LIBMTP_error_t) -> Option<Self> {
+        if list.is_null() {
+            None
+        } else {
+            while !(*list).next.is_null() {
+                list = (*list).next;
+            }
+
+            let error_t = &*list;
+
+            let kind = MtpErrorKind::from_error_number(error_t.errornumber)?;
+            let u8vec = cstr_to_u8vec!(error_t.error_text);
+            let text = String::from_utf8_lossy(&u8vec).into_owned();
+
+            Some(Error::MtpError { kind, text })
+        }
+    }
 }
 
-impl StackError {
-    pub(crate) unsafe fn from_error_list(mut list: *const ffi::LIBMTP_error_t) -> Vec<Self> {
-        let mut stack = Vec::new();
-
-        while !list.is_null() {
-            let error_t = &*list;
-            let vec = c_charp_to_u8v!(error_t.error_text);
-
-            stack.push(StackError {
-                kind: ErrorKind::from_code(error_t.errornumber).expect("Unexpected code"),
-                text: String::from_utf8(vec).expect("Invalid UTF-8 on StackError"),
-            });
-
-            list = (*list).next;
-        }
-
-        stack
+impl From<FromUtf8Error> for Error {
+    fn from(source: FromUtf8Error) -> Self {
+        Error::Utf8Error { source }
     }
 }
