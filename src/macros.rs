@@ -1,4 +1,4 @@
-macro_rules! c_charp_to_u8v {
+macro_rules! cstr_to_u8vec {
     ($ptr:expr) => {{
         let mut u8_vec = Vec::new();
 
@@ -11,5 +11,18 @@ macro_rules! c_charp_to_u8v {
         }
 
         u8_vec
+    }};
+}
+
+macro_rules! prim_array_ptr_to_vec {
+    ($ptr:expr, $to:ty, $len:expr) => {{
+        let mut vec = Vec::new();
+
+        for offset in 0..($len as isize) {
+            let item = *$ptr.offset(offset);
+            vec.push(item as $to);
+        }
+
+        vec
     }};
 }
