@@ -1,7 +1,12 @@
 [package]
 authors = ["Kevin Del Castillo <quebin31@gmail.com>"]
+categories = ["api-bindings", "filesystem"]
+description = "High-level interface for the libmtp C library."
 edition = "2018"
+keywords = ["mtp", "libmtp", "android", "players"]
+license = "MIT"
 name = "libmtp-rs"
+repository = "https://github.com/quebin31/libmtp-rs"
 version = "0.1.0-alpha1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
