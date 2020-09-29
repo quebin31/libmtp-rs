@@ -10,8 +10,8 @@ use std::{
 use std::os::unix::io::AsRawFd;
 
 use crate::{
-    util::data_put_func_handler, util::progress_func_handler, util::HandlerReturn,
-    util::Identifiable, Result,
+    object::filetypes::Filetype, util::data_get_func_handler, util::data_put_func_handler,
+    util::progress_func_handler, util::HandlerReturn, Identifiable, Result,
 };
 
 use super::MtpDevice;
@@ -107,6 +107,12 @@ impl<'a> File<'a> {
             let cstr = CStr::from_ptr((*self.inner).filename);
             cstr.to_str().expect("Invalid UTF-8 on file name")
         }
+    }
+
+    /// Returns the type of this file.
+    pub fn file_type(&self) -> Filetype {
+        let ftype = unsafe { (*self.inner).filetype };
+        Filetype::from_u32(ftype).expect("Unexpected raw variant of Filetype")
     }
 
     /// Returns the latest modification date in UTC.
