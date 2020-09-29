@@ -1,5 +1,6 @@
 use chrono::{DateTime, TimeZone, Utc};
 use libmtp_sys as ffi;
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::{collections::HashMap, ffi::CStr};
 use std::{
     fmt::{self, Debug},
@@ -338,7 +339,159 @@ impl<'a> Storage<'a> {
         }
     }
 
-    fn send_file_from_path(&self, path: impl AsRef<Path>, parent: Parent) {}
+    /// Sends a local file to the MTP device who this storage belongs to.
+    pub fn send_file_from_path<S, C>(
+        &self,
+        path: impl AsRef<Path>,
+        parent: Parent,
+        storage: S,
+        metadata: FileMetadata<'_>,
+        callback: Option<C>,
+    ) -> Result<File<'_>>
+    where
+        S: Identifiable<Id = u32>,
+        C: FnMut(u64, u64) -> bool,
+    {
+        let path = path.as_ref();
+        let cbuf = path_to_cvec!(path);
+
+        unsafe {
+            let file_t = ffi::LIBMTP_new_file_t();
+            fill_file_t!(metadata, parent.id(), storage.id(), file_t);
+
+            let res = if let Some(mut callback) = callback {
+                let mut cb: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+                let cb = &mut cb;
+                ffi::LIBMTP_Send_File_From_File(
+                    self.owner.inner,
+                    cbuf.as_ptr() as *const _,
+                    file_t,
+                    Some(progress_func_handler),
+                    cb as *mut _ as *mut libc::c_void as *const _,
+                )
+            } else {
+                ffi::LIBMTP_Send_File_From_File(
+                    self.owner.inner,
+                    cbuf.as_ptr() as *const _,
+                    file_t,
+                    None,
+                    std::ptr::null(),
+                )
+            };
+
+            if res != 0 {
+                Err(self.owner.latest_error().unwrap_or_default())
+            } else {
+                Ok(File {
+                    inner: file_t,
+                    owner: &self.owner,
+                })
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    pub fn send_file_from_descriptor<D, S, C>(
+        &self,
+        fd: D,
+        parent: Parent,
+        storage: S,
+        metadata: FileMetadata<'_>,
+        callback: Option<C>,
+    ) -> Result<File>
+    where
+        D: AsRawFd,
+        S: Identifiable<Id = u32>,
+        C: FnMut(u64, u64) -> bool,
+    {
+        unsafe {
+            let file_t = ffi::LIBMTP_new_file_t();
+            fill_file_t!(metadata, parent.id(), storage.id(), file_t);
+
+            let res = if let Some(mut callback) = callback {
+                let mut cb: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+                let cb = &mut cb;
+                ffi::LIBMTP_Send_File_From_File_Descriptor(
+                    self.owner.inner,
+                    fd.as_raw_fd(),
+                    file_t,
+                    Some(progress_func_handler),
+                    cb as *mut _ as *mut libc::c_void as *const _,
+                )
+            } else {
+                ffi::LIBMTP_Send_File_From_File_Descriptor(
+                    self.owner.inner,
+                    fd.as_raw_fd(),
+                    file_t,
+                    None,
+                    std::ptr::null(),
+                )
+            };
+
+            if res != 0 {
+                Err(self.owner.latest_error().unwrap_or_default())
+            } else {
+                Ok(File {
+                    inner: file_t,
+                    owner: &self.owner,
+                })
+            }
+        }
+    }
+
+    pub fn send_file_from_handler<S, G, C>(
+        &self,
+        parent: Parent,
+        storage: S,
+        metadata: FileMetadata<'_>,
+        gfunc: G,
+        callback: Option<C>,
+    ) -> Result<File<'_>>
+    where
+        S: Identifiable<Id = u32>,
+        G: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+        C: FnMut(u64, u64) -> bool,
+    {
+        let mut gfunc = gfunc;
+        let mut gf: &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn = &mut gfunc;
+        let gf = &mut gf;
+
+        unsafe {
+            let file_t = ffi::LIBMTP_new_file_t();
+            fill_file_t!(metadata, parent.id(), storage.id(), file_t);
+
+            let res = if let Some(mut callback) = callback {
+                let mut cb: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+                let cb = &mut cb;
+                ffi::LIBMTP_Send_File_From_Handler(
+                    self.owner.inner,
+                    Some(data_get_func_handler),
+                    gf as *mut _ as *mut libc::c_void,
+                    file_t,
+                    Some(progress_func_handler),
+                    cb as *mut _ as *mut libc::c_void as *const _,
+                )
+            } else {
+                ffi::LIBMTP_Send_File_From_Handler(
+                    self.owner.inner,
+                    Some(data_get_func_handler),
+                    gf as *mut _ as *mut libc::c_void,
+                    file_t,
+                    None,
+                    std::ptr::null(),
+                )
+            };
+
+            if res != 0 {
+                Err(self.owner.latest_error().unwrap_or_default())
+            } else {
+                Ok(File {
+                    inner: file_t,
+                    owner: &self.owner,
+                })
+            }
+        }
+    }
 }
 
 /// Represents all the storage "pool" of one MTP device.
