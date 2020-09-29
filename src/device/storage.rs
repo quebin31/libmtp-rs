@@ -23,6 +23,19 @@ pub enum Parent {
     Folder(u32),
 }
 
+impl Identifiable for Parent {
+    type Id = u32;
+
+    fn id(&self) -> Self::Id {
+        match self {
+            Parent::Root => ffi::LIBMTP_FILES_AND_FOLDERS_ROOT,
+            Parent::Folder(id) => *id,
+        }
+    }
+}
+
+/// Handler of a file object (file or folder).
+/// It implements `Identifiable` since it's an object.
 pub struct File<'a> {
     inner: *mut ffi::LIBMTP_file_t,
     owner: &'a MtpDevice,
