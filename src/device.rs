@@ -15,7 +15,8 @@ use std::fmt::{self, Debug};
 use storage::StoragePool;
 
 use crate::{
-    error::Error, object::filetypes::Filetype, object::properties::Property, values::AllowedValues,
+    error::Error, object::filetypes::Filetype, object::properties::Property, object::Object,
+    values::AllowedValues, Identifiable,
 };
 
 /// Sorting types when updating the inner storage list of an MTP device.
@@ -87,6 +88,14 @@ impl MtpDevice {
 }
 
 impl MtpDevice {
+    /// Build an Object with the specified id.
+    pub fn object(&self, id: impl Identifiable<Id = u32>) -> Object<'_> {
+        Object {
+            id: id.id(),
+            owner: &self,
+        }
+    }
+
     /// Retrieves the default music folder, if there isn't one this value may be garbage.
     /// Therefore it's not recommended to depend on this value.
     pub fn default_music_folder(&self) -> u32 {

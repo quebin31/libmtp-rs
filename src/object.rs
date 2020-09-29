@@ -16,8 +16,8 @@ use properties::Property;
 /// is tied with an MTP device.
 #[derive(Debug, Copy, Clone)]
 pub struct Object<'a> {
-    id: u32,
-    owner: &'a MtpDevice,
+    pub(crate) id: u32,
+    pub(crate) owner: &'a MtpDevice,
 }
 
 impl Identifiable for Object<'_> {
