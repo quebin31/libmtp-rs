@@ -39,16 +39,29 @@ pub(crate) unsafe extern "C" fn data_put_func_handler(
         .expect("Unexpected variant in HandlerReturn")
 }
 
-pub trait Identifiable {
-    type Id;
+#[allow(clippy::transmute_ptr_to_ref)]
+pub(crate) unsafe extern "C" fn data_get_func_handler(
+    _params: *mut libc::c_void,
+    priv_: *mut libc::c_void,
+    wantlen: u32,
+    data: *mut libc::c_uchar,
+    gotlen: *mut u32,
+) -> u16 {
+    let closure: &mut &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn =
+        std::mem::transmute(priv_);
 
-    fn id(&self) -> Self::Id;
-}
+    let mut rsdata = vec![0 as u8; wantlen as usize];
+    let gotlen: &mut u32 = std::mem::transmute(gotlen);
 
-impl Identifiable for u32 {
-    type Id = u32;
+    let ret = closure(&mut rsdata, gotlen)
+        .to_u16()
+        .expect("Unexpected variant in HandlerReturn");
 
-    fn id(&self) -> Self::Id {
-        *self
-    }
+    libc::memcpy(
+        data as *mut _,
+        rsdata.as_ptr() as *const _,
+        wantlen as usize,
+    );
+
+    ret
 }
