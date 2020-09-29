@@ -1,6 +1,55 @@
 # libmtp-rs 
+This crate aims to provide a flexible and high-level interface to the `libmtp` library, at
+its current state is alpha software and may not be used in production since some features
+are still missing, said this contributions are welcome.
 
-High-level interface to libmtp in Rust 
+## Requirements
+You need to have `libmtp` installed (minimum version 1.1.15), and have `pkg-config`
+properly configured (`pkg-config --libs libmtp` should output something reasonable).
 
-## Requirements 
-- `libmtp` and its dependencies
+## Available APIs 
+- [x] Internals API
+- [x] Device properties API 
+- [x] Object management API
+- [ ] Storage API
+    - [x] Format storage
+    - [ ] File management
+        - [x] List files 
+        - [x] Send files 
+        - [x] Receive files 
+        - [x] Rename files
+        - [ ] Sample data
+        - [ ] Events 
+        - [ ] Thumbnails
+    - [ ] Folder management 
+        - [ ] List folders
+        - [ ] Create folder 
+        - [ ] Rename folder
+    - [ ] Track management
+        - [ ] List tracks
+        - [ ] Send tracks
+        - [ ] Receive tracks 
+        - [ ] Rename track
+        - [ ] Update metadata
+    - [ ] Album management
+        - [ ] List albums
+        - [ ] Create album 
+        - [ ] Update album
+        - [ ] Rename album
+    - [ ] Playlist management
+        - [ ] List playlists
+        - [ ] Create playlist 
+        - [ ] Update playlist
+        - [ ] Rename playlist
+- [ ] Custom operations API (c_variadic)
+
+    
+## Contributing 
+`libmtp-rs` is an open source project! If you'd like to contribute, check any 
+open issue or create one, currently API design is open to discussion. Note that 
+the code you submit in PRs is assumed to be licensed under the MIT license.
+
+## License 
+This crate is licensed under the terms of the MIT license.
+
+See [LICENSE](LICENSE) to see the full text.

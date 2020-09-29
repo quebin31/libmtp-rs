@@ -1,8 +1,8 @@
 [package]
 authors = ["Kevin Del Castillo <quebin31@gmail.com>"]
 edition = "2018"
-name = "libmtp"
-version = "0.1.0"
+name = "libmtp-rs"
+version = "0.1.0-alpha1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
