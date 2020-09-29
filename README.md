@@ -47,9 +47,9 @@ properly configured (`pkg-config --libs libmtp` should output something reasonab
 ## Contributing 
 `libmtp-rs` is an open source project! If you'd like to contribute, check any 
 open issue or create one, current API design is open to discussion. Note that 
-the code you submit in PRs is assumed to be licensed under the MIT license.
+the code you submit in PRs is assumed to be licensed under the MIT License.
 
 ## License 
-This crate is licensed under the terms of the MIT license.
+This crate is licensed under the terms of the MIT License.
 
 See [LICENSE](LICENSE) to see the full text.
