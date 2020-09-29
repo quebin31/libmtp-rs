@@ -55,3 +55,23 @@ macro_rules! path_to_cvec {
     }};
 }
 
+macro_rules! fill_file_t {
+    ($filemetadata:expr, $parent:expr, $storage:expr, $file:ident) => {{
+        use std::ffi::CString;
+
+        let file_t = $file;
+        let metadata = $filemetadata;
+
+        (*file_t).parent_id = $parent;
+        (*file_t).storage_id = $storage;
+        (*file_t).filesize = metadata.file_size;
+        (*file_t).filetype = metadata
+            .file_type
+            .to_u32()
+            .expect("Unexpected variant in Filetype");
+        (*file_t).modificationdate = metadata.modification_date.timestamp() as libc::time_t;
+
+        let filename = CString::new(metadata.file_name).unwrap();
+        libc::strcpy((*file_t).filename, filename.as_c_str().as_ptr());
+    }};
+}
