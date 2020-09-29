@@ -139,6 +139,14 @@ impl<'a> File<'a> {
     }
 }
 
+/// Used as a parameter to send local files to the device.
+pub struct FileMetadata<'a> {
+    pub file_size: u64,
+    pub file_name: &'a str,
+    pub file_type: Filetype,
+    pub modification_date: DateTime<Utc>,
+}
+
 /// Storage descriptor of some MTP device, note that at any time anything can
 /// happen with the device and one of these descriptors *may be invalid*.
 pub struct Storage<'a> {
