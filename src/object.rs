@@ -6,7 +6,7 @@ pub mod properties;
 
 use super::device::MtpDevice;
 
-use crate::{error::Error, util::Identifiable};
+use crate::{error::Error, Identifiable};
 
 use libmtp_sys as ffi;
 use num_traits::ToPrimitive;
