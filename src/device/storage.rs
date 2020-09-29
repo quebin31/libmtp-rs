@@ -192,10 +192,7 @@ impl<'a> Storage<'a> {
     /// Retrieves the contents of a certain folder (`parent`) in this storage, the result contains
     /// both files and folders, note that this request will always perform I/O with the device.
     pub fn files_and_folders(&self, parent: Parent) -> Vec<File<'a>> {
-        let parent = match parent {
-            Parent::Root => ffi::LIBMTP_FILES_AND_FOLDERS_ROOT,
-            Parent::Folder(id) => id,
-        };
+        let parent = parent.id();
 
         unsafe {
             let mut head =
@@ -412,10 +409,7 @@ impl<'a> StoragePool<'a> {
     /// Retrieves the contents of a certain folder (`parent`) in all storages, the result contains
     /// both files and folders, note that this request will always perform I/O with the device.
     pub fn files_and_folders(&self, parent: Parent) -> Vec<File<'a>> {
-        let parent = match parent {
-            Parent::Root => ffi::LIBMTP_FILES_AND_FOLDERS_ROOT,
-            Parent::Folder(id) => id,
-        };
+        let parent = parent.id();
 
         unsafe {
             // Storage id 0 is meant to be the pool
