@@ -155,6 +155,15 @@ impl Identifiable for Storage<'_> {
     }
 }
 
+impl Identifiable for &Storage<'_> {
+    type Id = u32;
+
+    /// Returns the id of this device storage
+    fn id(&self) -> Self::Id {
+        unsafe { (*self.inner).id }
+    }
+}
+
 impl<'a> Storage<'a> {
     /// Formats this storage (if its device supports the operation).
     ///
