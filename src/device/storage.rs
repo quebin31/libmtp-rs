@@ -121,7 +121,7 @@ impl<'a> File<'a> {
         Utc.timestamp(epoch, 0)
     }
 
-    /// Rename the name of this file.
+    /// Rename this file in-place.
     pub fn rename(&mut self, new_name: &str) -> Result<()> {
         unsafe {
             let res = ffi::LIBMTP_Set_File_Name(
