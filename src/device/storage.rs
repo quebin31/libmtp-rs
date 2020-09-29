@@ -207,27 +207,7 @@ impl<'a> Storage<'a> {
         C: FnMut(u64, u64) -> bool,
     {
         let path = path.as_ref();
-        let mut buf = Vec::new();
-
-        cfg_if::cfg_if! {
-            if #[cfg(windows)] {
-                use std::iter::once;
-                use std::os::windows::ffi::OsStrExt;
-
-                buf.extend(path.as_os_str()
-                    .encode_wide()
-                    .chain(once(0))
-                    .flat_map(|b| {
-                        let b = b.to_ne_bytes();
-                        once(b[0]).chain(once(b[1]))
-                    }));
-            } else {
-                use std::os::unix::ffi::OsStrExt;
-
-                buf.extend(path.as_os_str().as_bytes());
-                buf.push(0);
-            }
-        }
+        let cbuf = path_to_cvec!(path);
 
         let res = if let Some(mut callback) = callback {
             let mut cb: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
@@ -236,7 +216,7 @@ impl<'a> Storage<'a> {
                 ffi::LIBMTP_Get_File_To_File(
                     self.owner.inner,
                     file.id(),
-                    buf.as_ptr() as *const _,
+                    cbuf.as_ptr() as *const _,
                     Some(progress_func_handler),
                     cb as *mut _ as *mut libc::c_void as *const _,
                 )
@@ -246,7 +226,7 @@ impl<'a> Storage<'a> {
                 ffi::LIBMTP_Get_File_To_File(
                     self.owner.inner,
                     file.id(),
-                    buf.as_ptr() as *const _,
+                    cbuf.as_ptr() as *const _,
                     None,
                     std::ptr::null(),
                 )

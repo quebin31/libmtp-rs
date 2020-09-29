@@ -26,3 +26,32 @@ macro_rules! prim_array_ptr_to_vec {
         vec
     }};
 }
+
+macro_rules! path_to_cvec {
+    ($path:expr) => {{
+        let mut buf = Vec::new();
+
+        cfg_if::cfg_if! {
+            if #[cfg(windows)] {
+                use std::iter::once;
+                use std::os::windows::ffi::OsStrExt;
+
+                buf.extend($path.as_os_str()
+                    .encode_wide()
+                    .chain(once(0))
+                    .flat_map(|b| {
+                        let b = b.to_ne_bytes();
+                        once(b[0]).chain(once(b[1]))
+                    }));
+            } else {
+                use std::os::unix::ffi::OsStrExt;
+
+                buf.extend($path.as_os_str().as_bytes());
+                buf.push(0);
+            }
+        }
+
+        buf
+    }};
+}
+
