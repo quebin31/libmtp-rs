@@ -57,6 +57,7 @@ macro_rules! path_to_cvec {
 
 macro_rules! fill_file_t {
     ($filemetadata:expr, $parent:expr, $storage:expr, $file:ident) => {{
+        use num_traits::ToPrimitive;
         use std::ffi::CString;
 
         let file_t = $file;
