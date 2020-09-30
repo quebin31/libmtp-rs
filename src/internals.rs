@@ -1,7 +1,8 @@
-use crate::error::Error;
 use bitflags::bitflags;
 use libmtp_sys as ffi;
 use std::ffi::CStr;
+
+use crate::{error::Error, Result};
 
 pub(crate) fn maybe_init() {
     static mut ALREADY_INIT: bool = false;
@@ -43,35 +44,34 @@ pub struct DeviceEntry {
 }
 
 /// Get a list of the supported devices.
-pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>, Error> {
+pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>> {
     maybe_init();
 
-    unsafe {
-        let mut devices = std::ptr::null_mut();
-        let mut len = 0;
+    let mut devices_ptr = std::ptr::null_mut();
+    let mut len = 0;
 
-        let res = ffi::LIBMTP_Get_Supported_Devices_List(&mut devices, &mut len);
+    let res = unsafe { ffi::LIBMTP_Get_Supported_Devices_List(&mut devices_ptr, &mut len) };
 
-        if res != 0 {
-            Err(Error::Unknown)
-        } else {
-            let devices_vec = (0..len as isize)
-                .map(|i| {
-                    let device = &*devices.offset(i);
-                    let vendor = CStr::from_ptr(device.vendor);
-                    let product = CStr::from_ptr(device.product);
+    if res != 0 {
+        Err(Error::Unknown)
+    } else {
+        let mut devices = Vec::new();
+        for offset in 0..len as isize {
+            unsafe {
+                let device = &*devices_ptr.offset(offset);
+                let vendor = CStr::from_ptr(device.vendor);
+                let product = CStr::from_ptr(device.product);
 
-                    DeviceEntry {
-                        vendor: vendor.to_str().expect("Invalid UTF-8"),
-                        vendor_id: device.vendor_id,
-                        product: product.to_str().expect("Invalid UTF-8"),
-                        product_id: device.product_id,
-                        device_flags: device.device_flags,
-                    }
-                })
-                .collect();
-
-            Ok(devices_vec)
+                devices.push(DeviceEntry {
+                    vendor: vendor.to_str().expect("Invalid UTF-8 in music-players.h?"),
+                    vendor_id: device.vendor_id,
+                    product: product.to_str().expect("Invalid UTF-8 in music-players.h?"),
+                    product_id: device.product_id,
+                    device_flags: device.device_flags,
+                });
+            }
         }
+
+        Ok(devices)
     }
 }
