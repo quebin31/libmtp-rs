@@ -6,6 +6,7 @@ edition = "2018"
 keywords = ["mtp", "libmtp", "android", "players"]
 license = "MIT"
 name = "libmtp-rs"
+readme = "README.md"
 repository = "https://github.com/quebin31/libmtp-rs"
 version = "0.2.0-alpha1"
 
