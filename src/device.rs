@@ -1,10 +1,6 @@
 /// Group of things related to device capabilities.
 pub mod capabilities;
 
-/// Group of things related to the storage of a device.
-pub mod storage;
-
-/// Group of things related to the management of raw devices.
 pub mod raw;
 
 use capabilities::DeviceCapability;
@@ -12,11 +8,13 @@ use libmtp_sys as ffi;
 use num_derive::ToPrimitive;
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::fmt::{self, Debug};
-use storage::StoragePool;
 
 use crate::{
-    error::Error, object::filetypes::Filetype, object::properties::Property, object::Object,
-    values::AllowedValues, Identifiable,
+    error::Error,
+    object::{filetypes::Filetype, properties::Property},
+    storage::StoragePool,
+    values::AllowedValues,
+    Result,
 };
 
 /// Sorting types when updating the inner storage list of an MTP device.
@@ -88,14 +86,6 @@ impl MtpDevice {
 }
 
 impl MtpDevice {
-    /// Build an Object with the specified id.
-    pub fn object(&self, id: impl Identifiable<Id = u32>) -> Object<'_> {
-        Object {
-            id: id.id(),
-            owner: &self,
-        }
-    }
-
     /// Retrieves the default music folder, if there isn't one this value may be garbage.
     /// Therefore it's not recommended to depend on this value.
     pub fn default_music_folder(&self) -> u32 {
@@ -103,7 +93,7 @@ impl MtpDevice {
     }
 
     /// Gets the friendly name of this device, e.g. "Kevin's Android"
-    pub fn get_friendly_name(&self) -> Result<String, Error> {
+    pub fn get_friendly_name(&self) -> Result<String> {
         unsafe {
             let friendly_name = ffi::LIBMTP_Get_Friendlyname(self.inner);
 
@@ -118,7 +108,7 @@ impl MtpDevice {
     }
 
     /// Sets the friendly name of this device
-    pub fn set_friendly_name(&self, name: &str) -> Result<(), Error> {
+    pub fn set_friendly_name(&self, name: &str) -> Result<()> {
         unsafe {
             let res =
                 ffi::LIBMTP_Set_Friendlyname(self.inner, name.as_ptr() as *const libc::c_char);
@@ -132,7 +122,7 @@ impl MtpDevice {
     }
 
     /// Retrieves the synchronization partner of this device.
-    pub fn get_sync_partner(&self) -> Result<String, Error> {
+    pub fn get_sync_partner(&self) -> Result<String> {
         unsafe {
             let partner = ffi::LIBMTP_Get_Syncpartner(self.inner);
             let u8vec = cstr_to_u8vec!(partner);
@@ -142,7 +132,7 @@ impl MtpDevice {
     }
 
     /// Sets the synchronization partner of this device.
-    pub fn set_sync_partner(&self, partner: &str) -> Result<(), Error> {
+    pub fn set_sync_partner(&self, partner: &str) -> Result<()> {
         unsafe {
             let res =
                 ffi::LIBMTP_Set_Syncpartner(self.inner, partner.as_ptr() as *const libc::c_char);
@@ -156,7 +146,7 @@ impl MtpDevice {
     }
 
     /// Returns the manufacturer name of this device, may fail.
-    pub fn manufacturer_name(&self) -> Result<String, Error> {
+    pub fn manufacturer_name(&self) -> Result<String> {
         unsafe {
             let manufacturer = ffi::LIBMTP_Get_Manufacturername(self.inner);
 
@@ -171,7 +161,7 @@ impl MtpDevice {
     }
 
     /// Returns the model name of this device, may fail.
-    pub fn model_name(&self) -> Result<String, Error> {
+    pub fn model_name(&self) -> Result<String> {
         unsafe {
             let model = ffi::LIBMTP_Get_Modelname(self.inner);
 
@@ -186,7 +176,7 @@ impl MtpDevice {
     }
 
     /// Returns the serial number of this device, may fail.
-    pub fn serial_number(&self) -> Result<String, Error> {
+    pub fn serial_number(&self) -> Result<String> {
         unsafe {
             let serial = ffi::LIBMTP_Get_Serialnumber(self.inner);
 
@@ -201,7 +191,7 @@ impl MtpDevice {
     }
 
     /// Returns the device (public key) certificate as an XML document string, may fail.
-    pub fn device_certificate(&self) -> Result<String, Error> {
+    pub fn device_certificate(&self) -> Result<String> {
         unsafe {
             let mut devcert = std::ptr::null_mut();
             let res = ffi::LIBMTP_Get_Device_Certificate(self.inner, &mut devcert);
@@ -217,7 +207,7 @@ impl MtpDevice {
     }
 
     /// Retrieves the current and maximum battery level of this device, may fail.
-    pub fn battery_level(&self) -> Result<(BatteryLevel, u8), Error> {
+    pub fn battery_level(&self) -> Result<(BatteryLevel, u8)> {
         unsafe {
             let mut max_level = 0;
             let mut cur_level = 0;
@@ -239,7 +229,7 @@ impl MtpDevice {
     }
 
     /// Returns the secure time as an XML document string, may fail.
-    pub fn secure_time(&self) -> Result<String, Error> {
+    pub fn secure_time(&self) -> Result<String> {
         unsafe {
             let mut secure_time = std::ptr::null_mut();
             let res = ffi::LIBMTP_Get_Secure_Time(self.inner, &mut secure_time);
@@ -256,7 +246,7 @@ impl MtpDevice {
 
     /// Retrieves a list of supported file types that this device claims it supports.  
     /// This list is mitigated to include the file types that `libmtp` (C library) can handle.
-    pub fn supported_filetypes(&self) -> Result<Vec<Filetype>, Error> {
+    pub fn supported_filetypes(&self) -> Result<Vec<Filetype>> {
         unsafe {
             let mut filetypes = std::ptr::null_mut();
             let mut len = 0;
@@ -289,7 +279,7 @@ impl MtpDevice {
 
     /// Reset the device only is this one supports the `PTP_OC_ResetDevice` operation code
     /// (`0x1010`)
-    pub fn reset_device(&self) -> Result<(), Error> {
+    pub fn reset_device(&self) -> Result<()> {
         unsafe {
             let res = ffi::LIBMTP_Reset_Device(self.inner);
 
@@ -304,7 +294,7 @@ impl MtpDevice {
     /// Updates all the internal storage ids and properties of this device, it can also
     /// optionally sort the list. This operation may success, partially success
     /// (only ids were retrieved) or fail.
-    pub fn update_storage(&mut self, sort_by: StorageSort) -> Result<UpdateResult, Error> {
+    pub fn update_storage(&mut self, sort_by: StorageSort) -> Result<UpdateResult> {
         unsafe {
             let res = ffi::LIBMTP_Get_Storage(self.inner, sort_by.to_i32().unwrap());
             match res {
@@ -333,11 +323,7 @@ impl MtpDevice {
     }
 
     /// Determines wheter a property is supported for a given file type.
-    pub fn is_property_supported(
-        &self,
-        property: Property,
-        filetype: Filetype,
-    ) -> Result<bool, Error> {
+    pub fn is_property_supported(&self, property: Property, filetype: Filetype) -> Result<bool> {
         let property = property.to_u32().unwrap();
         let filetype = filetype.to_u32().unwrap();
 
@@ -356,7 +342,7 @@ impl MtpDevice {
         &self,
         property: Property,
         filetype: Filetype,
-    ) -> Result<AllowedValues, Error> {
+    ) -> Result<AllowedValues> {
         let property = property.to_u32().unwrap();
         let filetype = filetype.to_u32().unwrap();
 
@@ -387,7 +373,9 @@ impl MtpDevice {
 
 #[cfg(test)]
 mod tests {
-    use super::{raw::detect_raw_devices, storage::Parent};
+    use crate::storage::Parent;
+
+    use super::raw::detect_raw_devices;
 
     #[test]
     fn temp() {
