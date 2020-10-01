@@ -1,3 +1,6 @@
+//! Module to manage some internal functionality of `libmtp` like debug levels and
+//! the supported devices, you won't usually use it.
+
 use bitflags::bitflags;
 use libmtp_sys as ffi;
 use std::ffi::CStr;
@@ -15,6 +18,15 @@ pub(crate) fn maybe_init() {
 }
 
 bitflags! {
+    /// Bitflags to activate different levels of debugging inside `libmtp`, multiple levels
+    /// are activated by using a bitwise or.
+    ///
+    /// ## Example
+    /// ```
+    /// use libmtp_rs::internals::DebugLevel;
+    ///
+    /// let debug_level = DebugLevel::USB | DebugLevel::PTP | DebugLevel::DATA;
+    /// ```
     pub struct DebugLevel: i32 {
         const NONE = ffi::LIBMTP_DEBUG_NONE as i32;
         const PTP = ffi::LIBMTP_DEBUG_PTP as i32;
@@ -25,7 +37,17 @@ bitflags! {
     }
 }
 
-/// Set the internal debug level of libmtp (C library).
+/// Set the internal debug level of libmtp (C library) using bitflags.
+///
+/// Note that [`DebugLevel`](struct.DebugLevel.html) isn't an enum but a bitflag, so you can activate
+/// specific parts.
+///
+/// ## Example
+/// ```
+/// use libmtp_rs::internals::{set_debug, DebugLevel};
+///
+/// set_debug(DebugLevel::PTP | DebugLevel::DATA);
+/// ```
 pub fn set_debug(level: DebugLevel) {
     maybe_init();
 
@@ -34,6 +56,8 @@ pub fn set_debug(level: DebugLevel) {
     }
 }
 
+/// Contains information about the devices `libmtp` supports. More information
+/// on [`music-players.h`](https://github.com/libmtp/libmtp/blob/master/src/music-players.h).
 #[derive(Debug, Clone)]
 pub struct DeviceEntry {
     pub vendor: &'static str,
@@ -43,8 +67,9 @@ pub struct DeviceEntry {
     pub device_flags: u32,
 }
 
-/// Get a list of the supported devices.
-pub fn get_supported_devices_list() -> Result<Vec<DeviceEntry>> {
+/// Retrieves the devices `libmtp` claims to support as stated in
+/// [`music-players.h`](https://github.com/libmtp/libmtp/blob/master/src/music-players.h).
+pub fn get_supported_devices() -> Result<Vec<DeviceEntry>> {
     maybe_init();
 
     let mut devices_ptr = std::ptr::null_mut();
