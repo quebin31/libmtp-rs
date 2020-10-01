@@ -1,3 +1,6 @@
+//! Utilities that doesn't fit anywhere else, mostly contains internal crate functions
+//! (which are not public) and other useful public items.
+
 use num_derive::ToPrimitive;
 use num_traits::ToPrimitive;
 
@@ -15,10 +18,16 @@ pub(crate) unsafe extern "C" fn progress_func_handler(
     }
 }
 
+/// Must return type of send and getter handlers that deal with raw bytes.
 #[derive(Debug, Copy, Clone, ToPrimitive)]
 pub enum HandlerReturn {
+    /// Return this if every went ok.
     Ok = 0,
+
+    /// Return this if there was an error.
     Error,
+
+    /// Return this if you want to cancel the operation earlier.
     Cancel,
 }
 

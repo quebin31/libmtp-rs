@@ -13,8 +13,7 @@ properly configured (`pkg-config --libs libmtp` should output something reasonab
 - [x] Object management API
     - [x] Get properties/attributes 
     - [x] Set properties/attributes 
-    - [ ] Rename object 
-    - [ ] Move, copy, delete object
+    - [x] Move, copy, delete object
     - [ ] Get/send partial object 
     - [ ] Truncate object
 - [ ] Storage API

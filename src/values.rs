@@ -1,7 +1,11 @@
+//! This module contains items used to determine which values are allowed to
+//! be used on certain object attributes (aka properties).
+
 use libmtp_sys as ffi;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+/// Enumeration to determine the data type of the allowed values.
 #[derive(Debug, Clone, Copy, FromPrimitive)]
 pub enum DataType {
     I8 = 0,
@@ -14,6 +18,7 @@ pub enum DataType {
     U64,
 }
 
+/// Contains relevant information about the allowed values for an specific type `T`.
 #[derive(Debug, Clone)]
 pub struct Values<T: Copy> {
     max: T,
@@ -40,6 +45,8 @@ impl<T: Copy> Values<T> {
     }
 }
 
+/// Contains the allowed values of an specific attribute, determines which data type
+/// should be used, and if the values are a range or enumeration.
 #[derive(Debug, Clone)]
 pub struct AllowedValues {
     u8_values: Option<Values<u8>>,
@@ -55,42 +62,60 @@ pub struct AllowedValues {
 }
 
 impl AllowedValues {
+    /// Check whether the allowed values are a range or enumeration.
     pub fn is_range(&self) -> bool {
         self.is_range
     }
 
+    /// Returns the data type that should be used.
     pub fn datatype(&self) -> DataType {
         self.datatype
     }
 
+    /// Returns the `u8` values, if the data type isn't `DataType::U8` this will
+    /// return `None`.
     pub fn u8_values(&self) -> Option<&Values<u8>> {
         self.u8_values.as_ref()
     }
 
+    /// Returns the `i8` values, if the data type isn't `DataType::I8` this will
+    /// return `None`.
     pub fn i8_values(&self) -> Option<&Values<i8>> {
         self.i8_values.as_ref()
     }
 
+    /// Returns the `u16` values, if the data type isn't `DataType::U16` this will
+    /// return `None`.
     pub fn u16_values(&self) -> Option<&Values<u16>> {
         self.u16_values.as_ref()
     }
 
+    /// Returns the `i16` values, if the data type isn't `DataType::I16` this will
+    /// return `None`.
     pub fn i16_values(&self) -> Option<&Values<i16>> {
         self.i16_values.as_ref()
     }
 
+    /// Returns the `u32` values, if the data type isn't `DataType::U32` this will
+    /// return `None`.
     pub fn u32_values(&self) -> Option<&Values<u32>> {
         self.u32_values.as_ref()
     }
 
+    /// Returns the `i32` values, if the data type isn't `DataType::I32` this will
+    /// return `None`.
     pub fn i32_values(&self) -> Option<&Values<i32>> {
         self.i32_values.as_ref()
     }
 
+    /// Returns the `u64` values, if the data type isn't `DataType::U64` this will
+    /// return `None`.
     pub fn u64_values(&self) -> Option<&Values<u64>> {
         self.u64_values.as_ref()
     }
 
+    /// Returns the `i64` values, if the data type isn't `DataType::I64` this will
+    /// return `None`.
     pub fn i64_values(&self) -> Option<&Values<i64>> {
         self.i64_values.as_ref()
     }
