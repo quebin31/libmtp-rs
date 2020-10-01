@@ -1,3 +1,7 @@
+//! Contains all the properties that `libmtp` claims to support and can handle. Note that some
+//! devices and certain filetypes may not support some of these properties (but theorically every
+//! object should support all properties).
+
 use libmtp_sys as ffi;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::ToPrimitive;
@@ -6,6 +10,8 @@ use std::{
     fmt::{self, Display},
 };
 
+/// Enumeration that holds the supported properties, this enum implements `Display` with the
+/// description of the property.
 #[derive(Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum Property {
     StorageId = 0,
