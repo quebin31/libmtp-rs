@@ -1,6 +1,8 @@
-/// Group of things related to device capabilities.
-pub mod capabilities;
+//! This module groups all the operations you can do on an MTP device, like gathering
+//! information, properties, support for filetypes, and update/gather storage in order
+//! to be able to send or get files, folders, tracks, etc.
 
+pub mod capabilities;
 pub mod raw;
 
 use capabilities::DeviceCapability;
@@ -17,15 +19,24 @@ use crate::{
     Result,
 };
 
-/// Sorting types when updating the inner storage list of an MTP device.
+/// Sorting logic to apply after the update of storages.
 #[derive(Debug, Clone, Copy, ToPrimitive)]
 pub enum StorageSort {
+    /// Do not sort the storages
     NotSorted = 0,
+    /// Sort storages by their free space.
     ByFreeSpace,
-    ByMaxSpace,
+    /// Sort storages by their maximum space.
+    ByMaximumSpace,
 }
 
-/// Result given when updating the inner storage list of an MTP device.
+/// Result given when updating the inner storage list of an MTP device with
+/// [`MtpDevice::update_storage`](struct.MtpDevice.html#method.battery_level).
+///
+/// This is mostly useful for the developer to show some sort of message, depending on
+/// whether there isn't enough information about the storage (`OnlyIds` where retrieved).
+/// Note that `StoragePool` and `Storage` instances have knowledge about the result
+/// of `update_storage`.
 #[derive(Debug, Clone, Copy)]
 pub enum UpdateResult {
     /// No errors, everything went fine.
@@ -34,7 +45,17 @@ pub enum UpdateResult {
     OnlyIds,
 }
 
-/// Information about the battery level.
+/// Information about the battery level gather from a device with
+/// [`MtpDevice::battery_level`](struct.MtpDevice.html#method.battery_level).
+///
+/// ## Example
+/// ```no_run
+/// let (level, max_level) = mtp_device.battery_level().expect("Failed to get battery level");
+/// match level {
+///     BatteryLevel::OnBattery(level) => println!("Using battery, current level {}", level),
+///     BatteryLevel::OnExternalPower => println!("Using external power, connected to AC"),
+/// }
+/// ```
 #[derive(Debug, Copy, Clone)]
 pub enum BatteryLevel {
     /// The device is currently on battery.
@@ -43,17 +64,18 @@ pub enum BatteryLevel {
     OnExternalPower,
 }
 
-/// Check if a specific device, given its bus and device number, has an
-/// MTP type device descriptor.
-pub fn check_specific_device(busno: u32, devno: u32) -> bool {
-    unsafe {
-        let res = ffi::LIBMTP_Check_Specific_Device(busno as i32, devno as i32);
-        res == 1
-    }
-}
-
-/// Result from opening a raw device descriptor, holds information
-/// about the device, storage, etc.
+/// Result from opening a raw device descriptor, holds information about the device like
+/// default folders, battery level, manufacturer, model, storage, etc.
+///
+/// Storage is directly tied to an MTP device by the `StoragePool` struct abstraction,
+/// which you may get with [`storage_pool`](struct.MtpDevice.html#method.storage_pool) after
+/// updating the storage with [`update_storage`](struct.MtpDevice.html#method.update_storage).
+///
+/// ## Example
+/// ```no_run
+/// mtp_device.update_storage().expect("Couldn't update storage");
+/// let storage_pool = mtp_device.storage_pool();
+/// ```
 pub struct MtpDevice {
     pub(crate) inner: *mut ffi::LIBMTP_mtpdevice_t,
 }
@@ -87,9 +109,59 @@ impl MtpDevice {
 
 impl MtpDevice {
     /// Retrieves the default music folder, if there isn't one this value may be garbage.
-    /// Therefore it's not recommended to depend on this value.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
     pub fn default_music_folder(&self) -> u32 {
         unsafe { (*self.inner).default_music_folder }
+    }
+
+    /// Retrieves the default playlist folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_playlist_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_playlist_folder }
+    }
+
+    /// Retrieves the default picture folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_picture_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_picture_folder }
+    }
+
+    /// Retrieves the default video folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_video_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_video_folder }
+    }
+
+    /// Retrieves the default organizer folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_organizer_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_organizer_folder }
+    }
+
+    /// Retrieves the default zencast folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_zencast_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_zencast_folder }
+    }
+
+    /// Retrieves the default album folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_album_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_album_folder }
+    }
+
+    /// Retrieves the default text folder, if there isn't one this value may be garbage.
+    /// Therefore, it's not recommended to depend on this value, unless you know exactly
+    /// how the device you are interacting with handles this setting.
+    pub fn default_text_folder(&self) -> u32 {
+        unsafe { (*self.inner).default_text_folder }
     }
 
     /// Gets the friendly name of this device, e.g. "Kevin's Android"
@@ -145,7 +217,7 @@ impl MtpDevice {
         }
     }
 
-    /// Returns the manufacturer name of this device, may fail.
+    /// Returns the manufacturer name of this device.
     pub fn manufacturer_name(&self) -> Result<String> {
         unsafe {
             let manufacturer = ffi::LIBMTP_Get_Manufacturername(self.inner);
@@ -160,7 +232,7 @@ impl MtpDevice {
         }
     }
 
-    /// Returns the model name of this device, may fail.
+    /// Returns the model name of this device.
     pub fn model_name(&self) -> Result<String> {
         unsafe {
             let model = ffi::LIBMTP_Get_Modelname(self.inner);
@@ -175,7 +247,7 @@ impl MtpDevice {
         }
     }
 
-    /// Returns the serial number of this device, may fail.
+    /// Returns the serial number of this device.
     pub fn serial_number(&self) -> Result<String> {
         unsafe {
             let serial = ffi::LIBMTP_Get_Serialnumber(self.inner);
@@ -190,7 +262,7 @@ impl MtpDevice {
         }
     }
 
-    /// Returns the device (public key) certificate as an XML document string, may fail.
+    /// Returns the device (public key) certificate as an XML document string.
     pub fn device_certificate(&self) -> Result<String> {
         unsafe {
             let mut devcert = std::ptr::null_mut();
@@ -206,7 +278,7 @@ impl MtpDevice {
         }
     }
 
-    /// Retrieves the current and maximum battery level of this device, may fail.
+    /// Retrieves the current and maximum battery level of this device.
     pub fn battery_level(&self) -> Result<(BatteryLevel, u8)> {
         unsafe {
             let mut max_level = 0;
@@ -228,7 +300,7 @@ impl MtpDevice {
         }
     }
 
-    /// Returns the secure time as an XML document string, may fail.
+    /// Returns the secure time as an XML document string.
     pub fn secure_time(&self) -> Result<String> {
         unsafe {
             let mut secure_time = std::ptr::null_mut();
@@ -245,7 +317,7 @@ impl MtpDevice {
     }
 
     /// Retrieves a list of supported file types that this device claims it supports.  
-    /// This list is mitigated to include the file types that `libmtp` (C library) can handle.
+    /// This list is mitigated to include the filetypes that `libmtp` (C library) can handle.
     pub fn supported_filetypes(&self) -> Result<Vec<Filetype>> {
         unsafe {
             let mut filetypes = std::ptr::null_mut();
@@ -268,7 +340,7 @@ impl MtpDevice {
         }
     }
 
-    /// Check if this device has some specific capability.
+    /// Check whether this device has some specific capabilitiy.
     pub fn check_capability(&self, capability: DeviceCapability) -> bool {
         unsafe {
             let cap_code = capability.to_u32().unwrap();
@@ -277,7 +349,7 @@ impl MtpDevice {
         }
     }
 
-    /// Reset the device only is this one supports the `PTP_OC_ResetDevice` operation code
+    /// Reset the device only if this one supports the `PTP_OC_ResetDevice` operation code
     /// (`0x1010`)
     pub fn reset_device(&self) -> Result<()> {
         unsafe {
