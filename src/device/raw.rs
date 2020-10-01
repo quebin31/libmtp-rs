@@ -1,11 +1,19 @@
-use libmtp_sys as ffi;
-use std::mem::MaybeUninit;
+//! Module to handle raw devices, this will be your entrypoint to manage connected USB
+//! devices.
 
-use crate::{error::Error, error::MtpErrorKind, internals::maybe_init, Result};
+use libmtp_sys as ffi;
+use std::{ffi::CStr, mem::MaybeUninit};
+
+use crate::{
+    error::{Error, MtpErrorKind},
+    internals::{maybe_init, DeviceEntry},
+    Result,
+};
 
 use super::MtpDevice;
 
-/// Raw MTP device descriptor, used to manually open an MTP device
+/// This struct handles a raw device, which should be opened with `open` or `open_uncached`
+/// if you want to manage the proper MTP device.
 pub struct RawDevice {
     pub(crate) inner: ffi::LIBMTP_raw_device_struct,
 }
@@ -39,9 +47,54 @@ impl RawDevice {
             }
         }
     }
+
+    /// Returns the bus number of this raw device.
+    pub fn bus_number(&self) -> u32 {
+        self.inner.bus_location
+    }
+
+    /// Returns the device number of this raw device.
+    pub fn dev_number(&self) -> u8 {
+        self.inner.devnum
+    }
+
+    /// Returns the device entry of this raw device.
+    pub fn device_entry(&self) -> DeviceEntry {
+        let vendor;
+        let product;
+
+        unsafe {
+            vendor = CStr::from_ptr(self.inner.device_entry.vendor);
+            product = CStr::from_ptr(self.inner.device_entry.product);
+        }
+
+        DeviceEntry {
+            vendor: vendor.to_str().expect("Invalid UTF-8 in music-players.h?"),
+            vendor_id: self.inner.device_entry.vendor_id,
+            product: product.to_str().expect("Invalid UTF-8 in music-players.h?"),
+            product_id: self.inner.device_entry.product_id,
+            device_flags: self.inner.device_entry.device_flags,
+        }
+    }
 }
 
-/// Detect the raw MTP device descriptors and return a vector of the devices found.
+/// Detect the raw device descriptors, you will use this function whenever you want
+/// to find which devices are connected, then you may open one or all of these devices,
+/// to properly manage the device properties, its storage, files, etc.
+///
+/// ## Example
+/// ```
+/// use libmtp_rs::raw::detect_raw_devices;
+///
+/// let raw_devices = detect_raw_devices().expect("Failed to detect raw devices");
+///
+/// // Try to open the first device
+/// let mtp_device = raw_devices
+///                     .get(0)
+///                     .map(|r| r.open_uncached())
+///                     .transpose()
+///                     .expect("Couldn't open raw device");
+/// ```
 pub fn detect_raw_devices() -> Result<Vec<RawDevice>> {
     maybe_init();
 
@@ -69,4 +122,11 @@ pub fn detect_raw_devices() -> Result<Vec<RawDevice>> {
             Ok(devices_vec)
         }
     }
+}
+
+/// Check if a specific device, given its bus and device number, has an
+/// MTP type device descriptor.
+pub fn check_specific_device(bus_number: u32, dev_number: u32) -> bool {
+    let res = unsafe { ffi::LIBMTP_Check_Specific_Device(bus_number as i32, dev_number as i32) };
+    res == 1
 }
