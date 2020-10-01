@@ -1,3 +1,5 @@
+//! Contains relevant items to handle file objects in the device.
+
 use chrono::{DateTime, TimeZone, Utc};
 use libmtp_sys as ffi;
 use num_traits::FromPrimitive;
@@ -22,8 +24,8 @@ use crate::{
 
 use super::Parent;
 
-/// Handler of a file object (file or folder).
-/// It implements `Identifiable` since it's an object.
+/// Abstraction of a file object, it implements `Object`, you may want to use
+/// this struct to create a tree representation of one storage.
 pub struct File<'a> {
     pub(crate) inner: *mut ffi::LIBMTP_file_t,
     pub(crate) owner: &'a MtpDevice,
@@ -126,7 +128,7 @@ impl<'a> File<'a> {
     }
 }
 
-/// Used as a parameter to send local files to the device.
+/// Convenience struct used as a parameter to send local files to an MTP device.
 pub struct FileMetadata<'a> {
     pub file_size: u64,
     pub file_name: &'a str,
