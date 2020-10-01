@@ -12,7 +12,7 @@ use crate::{device::MtpDevice, object::AsObjectId, util::HandlerReturn, Result};
 
 /// Internal function to retrieve files and folders from a single storage or the whole storage pool.
 fn files_and_folders<'a>(mtpdev: &'a MtpDevice, storage_id: u32, parent: Parent) -> Vec<File<'a>> {
-    let parent_id = parent.to_id();
+    let parent_id = parent.faf_id();
 
     let mut head =
         unsafe { ffi::LIBMTP_Get_Files_And_Folders(mtpdev.inner, storage_id, parent_id) };
@@ -38,9 +38,16 @@ pub enum Parent {
 }
 
 impl Parent {
-    pub(crate) fn to_id(self) -> u32 {
+    pub(crate) fn faf_id(self) -> u32 {
         match self {
             Parent::Root => ffi::LIBMTP_FILES_AND_FOLDERS_ROOT,
+            Parent::Folder(id) => id,
+        }
+    }
+
+    pub(crate) fn to_id(self) -> u32 {
+        match self {
+            Parent::Root => 0,
             Parent::Folder(id) => id,
         }
     }
