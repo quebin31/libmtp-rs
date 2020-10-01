@@ -1,7 +1,11 @@
+//! This module contains information about possible errors, such as internal and `libmtp` errors.
+
 use libmtp_sys as ffi;
 use std::string::FromUtf8Error;
 use thiserror::Error as ErrorTrait;
 
+/// Enumeration of possible `libmtp` errors, check
+/// [`Error::MtpError`](enum.Error.html#variant.MtpError) for more information.
 #[derive(Debug, Clone, Copy)]
 pub enum MtpErrorKind {
     General,
@@ -35,12 +39,20 @@ impl MtpErrorKind {
     }
 }
 
+/// Main Error type, containing a possible *unknown* error, an specific `libmtp` error
+/// and some other internal errors like invalid UTF-8 in string conversion.
 #[derive(Debug, Clone, ErrorTrait)]
 pub enum Error {
+    /// Unknown error, probably some `libmtp` undocumented error.
     #[error("Unknown error (possibly a libmtp undocumented error)")]
     Unknown,
+
+    /// Specific `libmtp` error, contains the kind of the error and extra information
+    /// about what went wrong.
     #[error("Internal libmtp ({kind:?}): {text}")]
     MtpError { kind: MtpErrorKind, text: String },
+
+    /// Internal error when converting strings with invalid UTF-8 encoding.
     #[error("Utf8 error ({source})")]
     Utf8Error { source: FromUtf8Error },
 }
