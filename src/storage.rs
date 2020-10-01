@@ -1,3 +1,7 @@
+//! Module with `Storage` and `StoragePool` that are able to manage the storage of
+//! an specific device, and perform certain operations like sending and getting
+//! files, tracks, etc.
+
 pub mod files;
 
 use files::{File, FileMetadata};
@@ -30,7 +34,8 @@ fn files_and_folders<'a>(mtpdev: &'a MtpDevice, storage_id: u32, parent: Parent)
     files
 }
 
-/// Represents the parent of an object, the top-most parent is called the "root".
+/// Represents the parent folder of an object, the top-most parent is called the "root" as in
+/// *nix like systems.
 #[derive(Debug, Copy, Clone)]
 pub enum Parent {
     Root,
@@ -53,8 +58,8 @@ impl Parent {
     }
 }
 
-/// Storage descriptor of some MTP device, note that at any time anything can
-/// happen with the device and one of these descriptors *may be invalid*.
+/// Storage descriptor of some MTP device, note that updating the storage and
+/// keeping a old copy of this struct is impossible.
 pub struct Storage<'a> {
     pub(crate) inner: *mut ffi::LIBMTP_devicestorage_t,
     pub(crate) owner: &'a MtpDevice,
@@ -68,7 +73,7 @@ impl<'a> Storage<'a> {
 
     /// Formats this storage (if its device supports the operation).
     ///
-    /// *WARNING:*  This WILL DELETE ALL DATA from the device, make sure
+    /// **WARNING:** This **WILL DELETE ALL DATA** from the device, make sure
     /// you've got confirmation from the user before calling this function.
     pub fn format_storage(&self) -> Result<()> {
         let res = unsafe { ffi::LIBMTP_Format_Storage(self.owner.inner, self.inner) };
@@ -88,7 +93,10 @@ impl<'a> Storage<'a> {
     }
 
     /// Retrieves a file from the device storage to a local file identified by a filename.
-    /// *WARNING:* Although this function is supported on Windows, it hasn't been tested yet.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn get_file_to_path<C>(
         &self,
         file: impl AsObjectId,
@@ -102,6 +110,10 @@ impl<'a> Storage<'a> {
     }
 
     /// Retrieves a file from the device storage to a local file identified by a descriptor.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     #[cfg(unix)]
     pub fn get_file_to_descriptor<C>(
         &self,
@@ -115,7 +127,17 @@ impl<'a> Storage<'a> {
         files::get_file_to_descriptor(self.owner, file, descriptor, callback)
     }
 
-    /// Retrieves a file from the device storage and calls put_func with chunks of data.
+    /// Retrieves a file from the device storage and calls handler with chunks of data.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
+    /// where the `read_len` should be modified with the amount of bytes you actually
+    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn get_file_to_handler<H, C>(
         &self,
         file: impl AsObjectId,
@@ -130,6 +152,10 @@ impl<'a> Storage<'a> {
     }
 
     /// Sends a local file to the MTP device who this storage belongs to.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
@@ -144,6 +170,11 @@ impl<'a> Storage<'a> {
         files::send_file_from_path(self.owner, storage_id, path, parent, metadata, callback)
     }
 
+    /// Sends a local file via descriptor to the MTP device who this storage belongs to.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     #[cfg(unix)]
     pub fn send_file_from_descriptor<C>(
         &self,
@@ -161,6 +192,17 @@ impl<'a> Storage<'a> {
         )
     }
 
+    /// Sends a bunch of data to the MTP device who this storage belongs to.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
+    /// where the `write_len` should be modified with the amount of bytes you actually
+    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn send_file_from_handler<H, C>(
         &self,
         handler: H,
@@ -177,13 +219,15 @@ impl<'a> Storage<'a> {
     }
 }
 
-/// Represents all the storage "pool" of one MTP device.
+/// Represents all the storage "pool" of one MTP device, contain all the storage entries
+/// of one MTP device, and contains some methods to send or get files from the primary storage.
 pub struct StoragePool<'a> {
     order: Vec<u32>,
     pool: HashMap<u32, Storage<'a>>,
     owner: &'a MtpDevice,
 }
 
+/// Iterator that allows us to get each `Storage` with its id.
 pub struct StoragePoolIter<'a> {
     pool: &'a HashMap<u32, Storage<'a>>,
     itr: usize,
@@ -248,7 +292,77 @@ impl<'a> StoragePool<'a> {
         files_and_folders(self.owner, 0, parent)
     }
 
-    /// Sends a local file to the MTP device who this storage belongs to.
+    /// Retrieves a file from the device storage to a local file identified by a filename, note
+    /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
+    /// this is because objects have unique ids across all the device.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
+    pub fn get_file_to_path<C>(
+        &self,
+        file: impl AsObjectId,
+        path: impl AsRef<Path>,
+        callback: Option<C>,
+    ) -> Result<()>
+    where
+        C: FnMut(u64, u64) -> bool,
+    {
+        files::get_file_to_path(self.owner, file, path, callback)
+    }
+
+    /// Retrieves a file from the device storage to a local file identified by a descriptor, note
+    /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
+    /// this is because objects have unique ids across all the device.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
+    #[cfg(unix)]
+    pub fn get_file_to_descriptor<C>(
+        &self,
+        file: impl AsObjectId,
+        descriptor: impl AsRawFd,
+        callback: Option<C>,
+    ) -> Result<()>
+    where
+        C: FnMut(u64, u64) -> bool,
+    {
+        files::get_file_to_descriptor(self.owner, file, descriptor, callback)
+    }
+
+    /// Retrieves a file from the device storage and calls handler with chunks of data, note that
+    /// this is just a convenience method since it's not necessary to depend on the `Storage`, this
+    /// is because objects have unique ids across all the device.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
+    /// where the `read_len` should be modified with the amount of bytes you actually
+    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
+    pub fn get_file_to_handler<H, C>(
+        &self,
+        file: impl AsObjectId,
+        handler: H,
+        callback: Option<C>,
+    ) -> Result<()>
+    where
+        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+        C: FnMut(u64, u64) -> bool,
+    {
+        files::get_file_to_handler(self.owner, file, handler, callback)
+    }
+
+    /// Sends a local file to the MTP device who this storage belongs to, note that this method
+    /// will send the file to the primary storage.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
@@ -263,6 +377,12 @@ impl<'a> StoragePool<'a> {
         files::send_file_from_path(self.owner, storage_id, path, parent, metadata, callback)
     }
 
+    /// Sends a local file via descriptor to the MTP device who this storage belongs to, note
+    /// that this method will send the file to the primary storage.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     #[cfg(unix)]
     pub fn send_file_from_descriptor<C>(
         &self,
@@ -280,6 +400,18 @@ impl<'a> StoragePool<'a> {
         )
     }
 
+    /// Sends a bunch of data to the MTP device who this storage belongs to, note that this
+    /// method will send the file to primary storage.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
+    /// where the `write_len` should be modified with the amount of bytes you actually
+    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is an optional progress function with the following signature
+    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
+    /// if you want to cancel operation you just return `false`.
     pub fn send_file_from_handler<H, C>(
         &self,
         handler: H,
