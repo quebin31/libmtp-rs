@@ -93,8 +93,18 @@ impl Drop for MtpDevice {
 
 impl Debug for MtpDevice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let max_bat_level = unsafe { (*self.inner).maximum_battery_level };
+
         f.debug_struct("MTPDevice")
+            .field("maximum_battery_level", &max_bat_level)
             .field("default_music_folder", &self.default_music_folder())
+            .field("default_playlist_folder", &self.default_playlist_folder())
+            .field("default_picture_folder", &self.default_picture_folder())
+            .field("default_video_folder", &self.default_video_folder())
+            .field("default_organizer_folder", &self.default_organizer_folder())
+            .field("default_zencast_folder", &self.default_zencast_folder())
+            .field("default_album_folder", &self.default_album_folder())
+            .field("default_text_folder", &self.default_text_folder())
             .finish()
     }
 }
@@ -446,35 +456,4 @@ impl MtpDevice {
 
     // TODO: Custom operation function (c_variadic nightly feature)
     // pub fn custom_operation(&self, code: u16, params: &[u32]) -> Result<(), ErrorKind>;
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::storage::Parent;
-
-    use super::raw::detect_raw_devices;
-
-    #[test]
-    fn temp() {
-        let raw_devices = detect_raw_devices().unwrap();
-        let mtp_device = raw_devices[0].open_uncached().unwrap();
-        println!("{:?}", mtp_device);
-
-        let storage_pool = mtp_device.storage_pool();
-        let (id, storage) = storage_pool.iter().nth(1).unwrap();
-        let files = storage.files_and_folders(Parent::Root);
-        println!("storage_id: {}", id);
-        println!("files: {:#?}", files);
-
-        storage
-            .get_file_to_path(
-                27,
-                "image.jpg",
-                Some(|sent, total| {
-                    println!("{} / {}", sent, total);
-                    true
-                }),
-            )
-            .expect("Failed to transfer");
-    }
 }
