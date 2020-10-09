@@ -65,8 +65,9 @@ impl Debug for File<'_> {
             .field("id", &self.id())
             .field("parent_id", &self.parent_id())
             .field("storage_id", &self.storage_id())
-            .field("file_size", &self.file_size())
-            .field("file_name", &self.file_name())
+            .field("size", &self.size())
+            .field("name", &self.name())
+            .field("ftype", &self.ftype())
             .field("modification_date", &self.modification_date())
             .finish()
     }
@@ -90,12 +91,12 @@ impl<'a> File<'a> {
     }
 
     /// Returns the size of this file.
-    pub fn file_size(&self) -> u64 {
+    pub fn size(&self) -> u64 {
         unsafe { (*self.inner).filesize }
     }
 
     /// Returns the name of this file.
-    pub fn file_name(&self) -> &str {
+    pub fn name(&self) -> &str {
         unsafe {
             let cstr = CStr::from_ptr((*self.inner).filename);
             cstr.to_str().expect("Invalid UTF-8 on file name")
@@ -103,7 +104,7 @@ impl<'a> File<'a> {
     }
 
     /// Returns the type of this file.
-    pub fn file_type(&self) -> Filetype {
+    pub fn ftype(&self) -> Filetype {
         let ftype = unsafe { (*self.inner).filetype };
         Filetype::from_u32(ftype).expect("Unexpected raw variant of Filetype")
     }
