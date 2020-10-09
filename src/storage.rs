@@ -5,6 +5,7 @@
 pub mod files;
 pub mod folders;
 
+use derivative::Derivative;
 use files::{File, FileMetadata};
 use libmtp_sys as ffi;
 use num_derive::FromPrimitive;
@@ -339,9 +340,13 @@ impl<'a> Storage<'a> {
 
 /// Represents all the storage "pool" of one MTP device, contain all the storage entries
 /// of one MTP device, and contains some methods to send or get files from the primary storage.
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct StoragePool<'a> {
     order: Vec<u32>,
     pool: HashMap<u32, Storage<'a>>,
+
+    #[derivative(Debug = "ignore")]
     owner: &'a MtpDevice,
 }
 
