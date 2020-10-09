@@ -2,7 +2,11 @@
 //! devices.
 
 use libmtp_sys as ffi;
-use std::{ffi::CStr, mem::MaybeUninit};
+use std::{
+    ffi::CStr,
+    fmt::{self, Debug},
+    mem::MaybeUninit,
+};
 
 use crate::{
     error::{Error, MtpErrorKind},
@@ -16,6 +20,16 @@ use super::MtpDevice;
 /// if you want to manage the proper MTP device.
 pub struct RawDevice {
     pub(crate) inner: ffi::LIBMTP_raw_device_struct,
+}
+
+impl Debug for RawDevice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RawDevice")
+            .field("bus_number", &self.bus_number())
+            .field("dev_number", &self.dev_number())
+            .field("device_entry", &self.device_entry())
+            .finish()
+    }
 }
 
 impl RawDevice {
