@@ -13,16 +13,14 @@ pub struct Folder<'a> {
     inner: *mut ffi::LIBMTP_folder_t,
     owner: &'a MtpDevice,
 
-    // Keep folders chained
-    parent: Option<&'a Folder<'a>>,
-    sibling: Option<&'a Folder<'a>>,
+    sibling_or_child: bool,
 }
 
 impl Drop for Folder<'_> {
     fn drop(&mut self) {
         // (Recursively) destroy this folder only if this one was the
         // first folder gathered
-        if self.parent.is_none() && self.sibling.is_none() {
+        if !self.sibling_or_child {
             unsafe {
                 ffi::LIBMTP_destroy_folder_t(self.inner);
             }
@@ -50,7 +48,7 @@ impl Object for &Folder<'_> {
     }
 }
 
-impl Folder<'_> {
+impl<'a> Folder<'a> {
     pub fn parent_id(&self) -> u32 {
         unsafe { (*self.inner).parent_id }
     }
@@ -62,7 +60,7 @@ impl Folder<'_> {
         }
     }
 
-    pub fn sibling(&self) -> Option<Folder<'_>> {
+    pub fn sibling(&self) -> Option<Folder<'a>> {
         unsafe {
             if (*self.inner).sibling.is_null() {
                 None
@@ -70,14 +68,13 @@ impl Folder<'_> {
                 Some(Folder {
                     inner: (*self.inner).sibling,
                     owner: self.owner,
-                    parent: None,
-                    sibling: Some(self),
+                    sibling_or_child: true,
                 })
             }
         }
     }
 
-    pub fn child(&self) -> Option<Folder<'_>> {
+    pub fn child(&self) -> Option<Folder<'a>> {
         unsafe {
             if (*self.inner).child.is_null() {
                 None
@@ -85,14 +82,13 @@ impl Folder<'_> {
                 Some(Folder {
                     inner: (*self.inner).child,
                     owner: self.owner,
-                    parent: Some(self),
-                    sibling: None,
+                    sibling_or_child: true,
                 })
             }
         }
     }
 
-    pub fn find(&self, folder_id: u32) -> Option<Folder<'_>> {
+    pub fn find(&self, folder_id: u32) -> Option<Folder<'a>> {
         let folder = unsafe { ffi::LIBMTP_Find_Folder(self.inner, folder_id) };
 
         if folder.is_null() {
@@ -101,8 +97,7 @@ impl Folder<'_> {
             Some(Folder {
                 inner: folder,
                 owner: self.owner,
-                parent: Some(self),
-                sibling: Some(self),
+                sibling_or_child: true,
             })
         }
     }
@@ -130,8 +125,7 @@ pub(crate) fn get_folder_list(mtpdev: &MtpDevice) -> Option<Folder<'_>> {
         Some(Folder {
             inner: folder,
             owner: mtpdev,
-            parent: None,
-            sibling: None,
+            sibling_or_child: false,
         })
     }
 }
@@ -145,8 +139,7 @@ pub(crate) fn get_folder_list_storage(mtpdev: &MtpDevice, storage_id: u32) -> Op
         Some(Folder {
             inner: folder,
             owner: mtpdev,
-            parent: None,
-            sibling: None,
+            sibling_or_child: false,
         })
     }
 }
