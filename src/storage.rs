@@ -200,7 +200,7 @@ impl<'a> Storage<'a> {
 
     /// Optionally returns a `Folder`, with this struct you can build a tree
     /// structure (see `Folder` for more info)
-    pub fn folder_list(&self) -> Option<Folder<'_>> {
+    pub fn folder_list(&self) -> Option<Folder<'a>> {
         unsafe { get_folder_list_storage(self.owner, (*self.inner).id) }
     }
 

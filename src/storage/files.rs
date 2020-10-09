@@ -73,7 +73,7 @@ impl Debug for File<'_> {
     }
 }
 
-impl<'a> File<'a> {
+impl File<'_> {
     /// Returns the id of the storage it belongs to.
     pub fn storage_id(&self) -> u32 {
         unsafe { (*self.inner).storage_id }
