@@ -22,7 +22,7 @@ fn main() -> Result<(), Error> {
 
             println!("Device {}: {}", i + 1, name);
         } else {
-            println!("Coulnd't open device {}", i + 1);
+            println!("Couldn't open device {}", i + 1);
         }
     }
 
