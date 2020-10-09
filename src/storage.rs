@@ -3,16 +3,19 @@
 //! files, tracks, etc.
 
 pub mod files;
+pub mod folders;
 
 use files::{File, FileMetadata};
 use libmtp_sys as ffi;
-use std::collections::HashMap;
 use std::path::Path;
+use std::{borrow::Cow, collections::HashMap};
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
 use crate::{device::MtpDevice, object::AsObjectId, util::HandlerReturn, Result};
+
+use self::folders::{create_folder, get_folder_list, get_folder_list_storage, Folder};
 
 /// Internal function to retrieve files and folders from a single storage or the whole storage pool.
 fn files_and_folders<'a>(mtpdev: &'a MtpDevice, storage_id: u32, parent: Parent) -> Vec<File<'a>> {
@@ -90,6 +93,19 @@ impl<'a> Storage<'a> {
     pub fn files_and_folders(&self, parent: Parent) -> Vec<File<'a>> {
         let storage_id = unsafe { (*self.inner).id };
         files_and_folders(self.owner, storage_id, parent)
+    }
+
+    /// Optionally returns a `Folder`, with this struct you can build a tree
+    /// structure (see `Folder` for more info)
+    pub fn folder_list(&self) -> Option<Folder<'_>> {
+        unsafe { get_folder_list_storage(self.owner, (*self.inner).id) }
+    }
+
+    /// Tries to create a new folder in this storage for the relevant `MtpDevice`, returns the id
+    /// of the new folder and its name, note that the name may be different due to device file
+    /// system restrictions.
+    pub fn create_folder<'b>(&self, name: &'b str, parent: Parent) -> Result<(u32, Cow<'b, str>)> {
+        unsafe { create_folder(self.owner, name, parent, (*self.inner).id) }
     }
 
     /// Retrieves a file from the device storage to a local file identified by a filename.
@@ -290,6 +306,19 @@ impl<'a> StoragePool<'a> {
     /// both files and folders, note that this request will always perform I/O with the device.
     pub fn files_and_folders(&self, parent: Parent) -> Vec<File<'a>> {
         files_and_folders(self.owner, 0, parent)
+    }
+
+    /// Optionally returns a `Folder`, with this struct you can build a tree
+    /// structure (see `Folder` for more info)
+    pub fn folder_list(&self) -> Option<Folder<'_>> {
+        get_folder_list(self.owner)
+    }
+
+    /// Tries to create a new folder in the default storage of the relevant `MtpDevice`, returns
+    /// the id of the new folder and its name, note that the name may be different due to device
+    /// file system restrictions.
+    pub fn create_folder<'b>(&self, name: &'b str, parent: Parent) -> Result<(u32, Cow<'b, str>)> {
+        create_folder(self.owner, name, parent, 0)
     }
 
     /// Retrieves a file from the device storage to a local file identified by a filename, note
