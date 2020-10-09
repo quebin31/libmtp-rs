@@ -7,6 +7,8 @@
 pub mod filetypes;
 pub mod properties;
 
+use std::ffi::CString;
+
 use super::device::MtpDevice;
 
 use crate::{storage::Parent, Result};
@@ -82,10 +84,10 @@ pub trait Object {
         let property = property.to_u32().unwrap();
         let id = self.id();
         let device = self.device();
+        let string = CString::new(string).expect("Nul byte");
 
-        let res = unsafe {
-            ffi::LIBMTP_Set_Object_String(device.inner, id, property, string.as_ptr() as *const _)
-        };
+        let res =
+            unsafe { ffi::LIBMTP_Set_Object_String(device.inner, id, property, string.as_ptr()) };
 
         if res != 0 {
             Err(device.latest_error().unwrap_or_default())

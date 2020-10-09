@@ -9,7 +9,10 @@ use capabilities::DeviceCapability;
 use libmtp_sys as ffi;
 use num_derive::ToPrimitive;
 use num_traits::{FromPrimitive, ToPrimitive};
-use std::fmt::{self, Debug};
+use std::{
+    ffi::CString,
+    fmt::{self, Debug},
+};
 
 use crate::{
     error::Error,
@@ -181,9 +184,10 @@ impl MtpDevice {
 
     /// Sets the friendly name of this device
     pub fn set_friendly_name(&self, name: &str) -> Result<()> {
+        let name = CString::new(name).expect("Nul byte");
+
         unsafe {
-            let res =
-                ffi::LIBMTP_Set_Friendlyname(self.inner, name.as_ptr() as *const libc::c_char);
+            let res = ffi::LIBMTP_Set_Friendlyname(self.inner, name.as_ptr());
 
             if res != 0 {
                 Err(self.latest_error().unwrap_or_default())
@@ -205,9 +209,10 @@ impl MtpDevice {
 
     /// Sets the synchronization partner of this device.
     pub fn set_sync_partner(&self, partner: &str) -> Result<()> {
+        let partner = CString::new(partner).expect("Nul byte");
+
         unsafe {
-            let res =
-                ffi::LIBMTP_Set_Syncpartner(self.inner, partner.as_ptr() as *const libc::c_char);
+            let res = ffi::LIBMTP_Set_Syncpartner(self.inner, partner.as_ptr());
 
             if res != 0 {
                 Err(self.latest_error().unwrap_or_default())

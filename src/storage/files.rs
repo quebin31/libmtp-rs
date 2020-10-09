@@ -4,7 +4,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use libmtp_sys as ffi;
 use num_traits::FromPrimitive;
 use std::{
-    ffi::CStr,
+    ffi::{CStr, CString},
     fmt::{self, Debug},
     path::Path,
 };
@@ -116,6 +116,8 @@ impl<'a> File<'a> {
 
     /// Rename this file in-place.
     pub fn rename(&mut self, new_name: &str) -> Result<()> {
+        let new_name = CString::new(new_name).expect("Nul byte");
+
         let res = unsafe {
             ffi::LIBMTP_Set_File_Name(self.owner.inner, self.inner, new_name.as_ptr() as *const _)
         };
