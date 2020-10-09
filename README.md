@@ -26,10 +26,10 @@ properly configured (`pkg-config --libs libmtp` should output something reasonab
         - [ ] Sample data
         - [ ] Events 
         - [ ] Thumbnails
-    - [ ] Folder management 
-        - [ ] List folders
-        - [ ] Create folder 
-        - [ ] Rename folder
+    - [x] Folder management 
+        - [x] List folders
+        - [x] Create folder 
+        - [x] Rename folder
     - [ ] Track management
         - [ ] List tracks
         - [ ] Send tracks
