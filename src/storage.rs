@@ -254,7 +254,7 @@ impl<'a> Iterator for StoragePoolIter<'a> {
     type Item = (u32, &'a Storage<'a>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.itr > self.pool.len() {
+        if self.itr >= self.pool.len() {
             None
         } else {
             let next_id = self.order[self.itr];
