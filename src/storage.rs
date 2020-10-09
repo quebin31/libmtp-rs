@@ -7,8 +7,13 @@ pub mod folders;
 
 use files::{File, FileMetadata};
 use libmtp_sys as ffi;
-use std::path::Path;
-use std::{borrow::Cow, collections::HashMap};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+use std::{borrow::Cow, collections::HashMap, ffi::CStr};
+use std::{
+    fmt::{self, Debug},
+    path::Path,
+};
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
@@ -61,6 +66,30 @@ impl Parent {
     }
 }
 
+#[derive(Debug, Copy, Clone, FromPrimitive)]
+pub enum StorageType {
+    Undefined = 0,
+    FixedRom,
+    RemovableRom,
+    FixedRam,
+    RemovableRam,
+}
+
+#[derive(Debug, Copy, Clone, FromPrimitive)]
+pub enum FilesystemType {
+    Undefined = 0,
+    GenericFlat,
+    GenericHierarchical,
+    DesignCameraFilesystem,
+}
+
+#[derive(Debug, Copy, Clone, FromPrimitive)]
+pub enum AccessCapability {
+    ReadWrite = 0,
+    ReadOnly,
+    ReadOnlyWithObjectDeletion,
+}
+
 /// Storage descriptor of some MTP device, note that updating the storage and
 /// keeping a old copy of this struct is impossible.
 pub struct Storage<'a> {
@@ -68,10 +97,83 @@ pub struct Storage<'a> {
     pub(crate) owner: &'a MtpDevice,
 }
 
+impl Debug for Storage<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Storage")
+            .field("id", &self.id())
+            .field("storage_type", &self.storage_type())
+            .field("filesystem_type", &self.filesystem_type())
+            .field("access_capability", &self.access_capability())
+            .field("maximum_capacity", &self.maximum_capacity())
+            .field("free_space_in_bytes", &self.free_space_in_bytes())
+            .field("free_space_in_objects", &self.free_space_in_objects())
+            .field("volume_identifier", &self.volume_identifier())
+            .field("description", &self.description())
+            .finish()
+    }
+}
+
 impl<'a> Storage<'a> {
     /// Retrieves the id of this storage.
     pub fn id(&self) -> u32 {
         unsafe { (*self.inner).id }
+    }
+
+    /// Returns the storage type
+    pub fn storage_type(&self) -> StorageType {
+        let stype = unsafe { (*self.inner).StorageType };
+        StorageType::from_u16(stype).unwrap_or_else(|| StorageType::Undefined)
+    }
+
+    /// Returns the file system type
+    pub fn filesystem_type(&self) -> FilesystemType {
+        let ftype = unsafe { (*self.inner).FilesystemType };
+        FilesystemType::from_u16(ftype).unwrap_or_else(|| FilesystemType::Undefined)
+    }
+
+    /// Returns the access capability
+    pub fn access_capability(&self) -> AccessCapability {
+        let cap = unsafe { (*self.inner).AccessCapability };
+        AccessCapability::from_u16(cap).expect("Unknown access capability")
+    }
+
+    /// Returns the maximum capacity
+    pub fn maximum_capacity(&self) -> u64 {
+        unsafe { (*self.inner).MaxCapacity }
+    }
+
+    /// Returns the free space in bytes
+    pub fn free_space_in_bytes(&self) -> u64 {
+        unsafe { (*self.inner).FreeSpaceInBytes }
+    }
+
+    /// Returns the free space in objects
+    pub fn free_space_in_objects(&self) -> u64 {
+        unsafe { (*self.inner).FreeSpaceInObjects }
+    }
+
+    /// Returns the storage description
+    pub fn description(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).StorageDescription.is_null() {
+                None
+            } else {
+                let cstr = CStr::from_ptr((*self.inner).StorageDescription);
+                Some(cstr.to_str().expect("Invalid UTF-8"))
+            }
+        }
+    }
+
+    /// Returns the volume identifier
+    pub fn volume_identifier(&self) -> Option<&str> {
+        unsafe {
+            if (*self.inner).VolumeIdentifier.is_null() {
+                None
+            } else {
+                let cstr = CStr::from_ptr((*self.inner).VolumeIdentifier);
+                Some(cstr.to_str().expect("Invalid UTF-8"))
+            }
+        }
     }
 
     /// Formats this storage (if its device supports the operation).
