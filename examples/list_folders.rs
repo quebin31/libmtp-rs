@@ -41,7 +41,7 @@ fn main() -> Result<(), Error> {
         if let Some(mut mtp_device) = mtp_device {
             mtp_device.update_storage(StorageSort::ByFreeSpace)?;
             let storage_pool = mtp_device.storage_pool();
-            let (_, storage) = storage_pool.iter().next().expect("No storages");
+            let (_, storage) = storage_pool.iter().next().expect("No storage");
 
             println!("{:#?}", storage);
 
