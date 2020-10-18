@@ -7,17 +7,204 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'libmtp'",
+            "name": "Debug unit tests in library 'libmtp-rs'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=libmtp"
+                    "--package=libmtp-rs"
                 ],
                 "filter": {
-                    "name": "libmtp",
+                    "name": "libmtp-rs",
                     "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'get_file'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=get_file",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "get_file",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'get_file'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=get_file",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "get_file",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'list_folders'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=list_folders",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_folders",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'list_folders'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=list_folders",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_folders",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'send_file'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=send_file",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "send_file",
+                    "kind": "example"
+                }
+            },
+            "args": [
+                "LICENSE"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'send_file'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=send_file",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "send_file",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'list_devices'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=list_devices",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_devices",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'list_devices'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=list_devices",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_devices",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'list_storages'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=list_storages",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_storages",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'list_storages'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=list_storages",
+                    "--package=libmtp-rs"
+                ],
+                "filter": {
+                    "name": "list_storages",
+                    "kind": "example"
                 }
             },
             "args": [],
