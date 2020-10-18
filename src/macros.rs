@@ -73,6 +73,6 @@ macro_rules! fill_file_t {
         (*file_t).modificationdate = metadata.modification_date.timestamp() as libc::time_t;
 
         let filename = CString::new(metadata.file_name).unwrap();
-        libc::strcpy((*file_t).filename, filename.as_c_str().as_ptr());
+        (*file_t).filename = libc::strdup(filename.as_c_str().as_ptr());
     }};
 }
