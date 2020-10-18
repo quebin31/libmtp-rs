@@ -37,7 +37,7 @@ fn main() -> Result<(), Error> {
     let raw_devices = detect_raw_devices()?;
     let mtp_devices = raw_devices.into_iter().map(|raw| raw.open_uncached());
 
-    for (i, mtp_device) in mtp_devices.enumerate() {
+    for (idx, mtp_device) in mtp_devices.enumerate() {
         if let Some(mut mtp_device) = mtp_device {
             mtp_device.update_storage(StorageSort::ByFreeSpace)?;
             let storage_pool = mtp_device.storage_pool();
@@ -54,7 +54,7 @@ fn main() -> Result<(), Error> {
                 print_folder_tree_wfiles(storage, root_contents, 1);
             }
         } else {
-            println!("Couldn't open device {}", i + 1);
+            println!("Couldn't open device {}", idx + 1);
         }
     }
 

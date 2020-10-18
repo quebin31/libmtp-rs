@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     ffi::{CStr, CString},
+    fmt::{self, Debug},
 };
 
 use libmtp_sys as ffi;
@@ -45,6 +46,15 @@ impl Object for &Folder<'_> {
 
     fn device(&self) -> &MtpDevice {
         self.owner
+    }
+}
+
+impl Debug for Folder<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Folder")
+            .field("parent_id", &self.parent_id())
+            .field("name", &self.name())
+            .finish()
     }
 }
 

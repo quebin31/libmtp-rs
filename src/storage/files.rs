@@ -15,10 +15,7 @@ use std::os::unix::io::AsRawFd;
 use crate::{
     device::MtpDevice,
     object::{filetypes::Filetype, AsObjectId, Object},
-    util::data_get_func_handler,
-    util::data_put_func_handler,
-    util::progress_func_handler,
-    util::HandlerReturn,
+    util::{data_get_func_handler, data_put_func_handler, progress_func_handler, HandlerReturn},
     Result,
 };
 
@@ -132,6 +129,7 @@ impl File<'_> {
 }
 
 /// Convenience struct used as a parameter to send local files to an MTP device.
+#[derive(Debug, Clone)]
 pub struct FileMetadata<'a> {
     pub file_size: u64,
     pub file_name: &'a str,
