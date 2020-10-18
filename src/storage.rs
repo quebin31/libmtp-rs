@@ -215,9 +215,10 @@ impl<'a> Storage<'a> {
 
     /// Retrieves a file from the device storage to a local file identified by a filename.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn get_file_to_path<C>(
         &self,
         file: impl AsObjectId,
@@ -232,9 +233,10 @@ impl<'a> Storage<'a> {
 
     /// Retrieves a file from the device storage to a local file identified by a descriptor.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
     pub fn get_file_to_descriptor<C>(
         &self,
@@ -256,9 +258,10 @@ impl<'a> Storage<'a> {
     /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn get_file_to_handler<H, C>(
         &self,
         file: impl AsObjectId,
@@ -274,9 +277,10 @@ impl<'a> Storage<'a> {
 
     /// Sends a local file to the MTP device who this storage belongs to.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
@@ -300,9 +304,10 @@ impl<'a> Storage<'a> {
 
     /// Sends a local file via descriptor to the MTP device who this storage belongs to.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
     pub fn send_file_from_descriptor<C>(
         &self,
@@ -333,9 +338,10 @@ impl<'a> Storage<'a> {
     /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_handler<H, C>(
         &self,
         handler: H,
@@ -453,9 +459,10 @@ impl<'a> StoragePool<'a> {
     /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
     /// this is because objects have unique ids across all the device.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn get_file_to_path<C>(
         &self,
         file: impl AsObjectId,
@@ -472,9 +479,10 @@ impl<'a> StoragePool<'a> {
     /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
     /// this is because objects have unique ids across all the device.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
     pub fn get_file_to_descriptor<C>(
         &self,
@@ -498,9 +506,10 @@ impl<'a> StoragePool<'a> {
     /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn get_file_to_handler<H, C>(
         &self,
         file: impl AsObjectId,
@@ -517,9 +526,10 @@ impl<'a> StoragePool<'a> {
     /// Sends a local file to the MTP device who this storage belongs to, note that this method
     /// will send the file to the primary storage.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
@@ -544,9 +554,10 @@ impl<'a> StoragePool<'a> {
     /// Sends a local file via descriptor to the MTP device who this storage belongs to, note
     /// that this method will send the file to the primary storage.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
     pub fn send_file_from_descriptor<C>(
         &self,
@@ -578,9 +589,10 @@ impl<'a> StoragePool<'a> {
     /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following signature
-    /// `(sent_bytes: u64, total_bytes: u64) -> bool`, this way you can check the progress and
-    /// if you want to cancel operation you just return `false`.
+    /// The `callback` parameter is an optional progress function with the following
+    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
+    /// can check the progress and if you want to cancel operation you just return
+    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_handler<H, C>(
         &self,
         handler: H,
