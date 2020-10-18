@@ -15,7 +15,10 @@ use std::os::unix::io::AsRawFd;
 use crate::{
     device::MtpDevice,
     object::{filetypes::Filetype, AsObjectId, Object},
-    util::{data_get_func_handler, data_put_func_handler, progress_func_handler, HandlerReturn},
+    util::{
+        data_get_func_handler, data_put_func_handler, progress_func_handler, CallbackReturn,
+        HandlerReturn,
+    },
     Result,
 };
 
@@ -144,13 +147,13 @@ pub(crate) fn get_file_to_path<C>(
     callback: Option<C>,
 ) -> Result<()>
 where
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let path = path.as_ref();
     let path = path_to_cvec!(path);
 
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 
@@ -190,10 +193,10 @@ pub(crate) fn get_file_to_descriptor<C>(
     callback: Option<C>,
 ) -> Result<()>
 where
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 
@@ -233,7 +236,7 @@ pub(crate) fn get_file_to_handler<H, C>(
 ) -> Result<()>
 where
     H: FnMut(&[u8], &mut u32) -> HandlerReturn,
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let mut handler = handler;
     let mut handler: &mut dyn FnMut(&[u8], &mut u32) -> HandlerReturn = &mut handler;
@@ -241,7 +244,7 @@ where
     let handler = handler as *mut _ as *mut libc::c_void;
 
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 
@@ -284,7 +287,7 @@ pub(crate) fn send_file_from_path<'a, C>(
     callback: Option<C>,
 ) -> Result<File<'a>>
 where
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let path = path.as_ref();
     let path = path_to_cvec!(path);
@@ -293,7 +296,7 @@ where
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 
@@ -338,13 +341,13 @@ pub(crate) fn send_file_from_descriptor<'a, C>(
     callback: Option<C>,
 ) -> Result<File<'a>>
 where
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let file_t = unsafe { ffi::LIBMTP_new_file_t() };
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 
@@ -389,7 +392,7 @@ pub(crate) fn send_file_from_handler<'a, H, C>(
 ) -> Result<File<'a>>
 where
     H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
-    C: FnMut(u64, u64) -> bool,
+    C: FnMut(u64, u64) -> CallbackReturn,
 {
     let mut handler = handler;
     let mut handler: &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn = &mut handler;
@@ -400,7 +403,7 @@ where
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let res = if let Some(mut callback) = callback {
-        let mut callback: &mut dyn FnMut(u64, u64) -> bool = &mut callback;
+        let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
         let callback = &mut callback;
         let callback = callback as *mut _ as *mut libc::c_void as *const _;
 

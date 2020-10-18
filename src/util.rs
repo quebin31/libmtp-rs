@@ -4,17 +4,25 @@
 use num_derive::ToPrimitive;
 use num_traits::ToPrimitive;
 
+/// Must return type on callbacks (send and get files)
+#[derive(Debug, Copy, Clone)]
+pub enum CallbackReturn {
+    /// Return this to continue the operation.
+    Continue,
+    /// Return this to cancel the operation.
+    Cancel,
+}
+
 #[allow(clippy::transmute_ptr_to_ref)]
 pub(crate) unsafe extern "C" fn progress_func_handler(
     sent: u64,
     total: u64,
     data: *const libc::c_void,
 ) -> libc::c_int {
-    let closure: &mut &mut dyn FnMut(u64, u64) -> bool = std::mem::transmute(data);
-    if closure(sent, total) {
-        0
-    } else {
-        1
+    let closure: &mut &mut dyn FnMut(u64, u64) -> CallbackReturn = std::mem::transmute(data);
+    match closure(sent, total) {
+        CallbackReturn::Continue => 0,
+        CallbackReturn::Cancel => 1,
     }
 }
 

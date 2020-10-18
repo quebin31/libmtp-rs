@@ -19,7 +19,9 @@ use std::{
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use crate::{device::MtpDevice, object::AsObjectId, util::HandlerReturn, Result};
+use crate::{
+    device::MtpDevice, object::AsObjectId, util::CallbackReturn, util::HandlerReturn, Result,
+};
 
 use self::folders::{create_folder, get_folder_list, get_folder_list_storage, Folder};
 
@@ -220,12 +222,12 @@ impl<'a> Storage<'a> {
         &self,
         file: impl AsObjectId,
         path: impl AsRef<Path>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_path(self.owner, file, path, callback)
+        files::get_file_to_path(self.owner, file, path, callback.into())
     }
 
     /// Retrieves a file from the device storage to a local file identified by a descriptor.
@@ -238,12 +240,12 @@ impl<'a> Storage<'a> {
         &self,
         file: impl AsObjectId,
         descriptor: impl AsRawFd,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_descriptor(self.owner, file, descriptor, callback)
+        files::get_file_to_descriptor(self.owner, file, descriptor, callback.into())
     }
 
     /// Retrieves a file from the device storage and calls handler with chunks of data.
@@ -261,13 +263,13 @@ impl<'a> Storage<'a> {
         &self,
         file: impl AsObjectId,
         handler: H,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
         H: FnMut(&[u8], &mut u32) -> HandlerReturn,
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_handler(self.owner, file, handler, callback)
+        files::get_file_to_handler(self.owner, file, handler, callback.into())
     }
 
     /// Sends a local file to the MTP device who this storage belongs to.
@@ -280,13 +282,20 @@ impl<'a> Storage<'a> {
         path: impl AsRef<Path>,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_path(self.owner, storage_id, path, parent, metadata, callback)
+        files::send_file_from_path(
+            self.owner,
+            storage_id,
+            path,
+            parent,
+            metadata,
+            callback.into(),
+        )
     }
 
     /// Sends a local file via descriptor to the MTP device who this storage belongs to.
@@ -300,14 +309,19 @@ impl<'a> Storage<'a> {
         descriptor: impl AsRawFd,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
         files::send_file_from_descriptor(
-            self.owner, storage_id, descriptor, parent, metadata, callback,
+            self.owner,
+            storage_id,
+            descriptor,
+            parent,
+            metadata,
+            callback.into(),
         )
     }
 
@@ -327,14 +341,21 @@ impl<'a> Storage<'a> {
         handler: H,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
         H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata, callback)
+        files::send_file_from_handler(
+            self.owner,
+            storage_id,
+            handler,
+            parent,
+            metadata,
+            callback.into(),
+        )
     }
 }
 
@@ -439,12 +460,12 @@ impl<'a> StoragePool<'a> {
         &self,
         file: impl AsObjectId,
         path: impl AsRef<Path>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_path(self.owner, file, path, callback)
+        files::get_file_to_path(self.owner, file, path, callback.into())
     }
 
     /// Retrieves a file from the device storage to a local file identified by a descriptor, note
@@ -459,12 +480,12 @@ impl<'a> StoragePool<'a> {
         &self,
         file: impl AsObjectId,
         descriptor: impl AsRawFd,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_descriptor(self.owner, file, descriptor, callback)
+        files::get_file_to_descriptor(self.owner, file, descriptor, callback.into())
     }
 
     /// Retrieves a file from the device storage and calls handler with chunks of data, note that
@@ -484,13 +505,13 @@ impl<'a> StoragePool<'a> {
         &self,
         file: impl AsObjectId,
         handler: H,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<()>
     where
         H: FnMut(&[u8], &mut u32) -> HandlerReturn,
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_handler(self.owner, file, handler, callback)
+        files::get_file_to_handler(self.owner, file, handler, callback.into())
     }
 
     /// Sends a local file to the MTP device who this storage belongs to, note that this method
@@ -504,13 +525,20 @@ impl<'a> StoragePool<'a> {
         path: impl AsRef<Path>,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
-        files::send_file_from_path(self.owner, storage_id, path, parent, metadata, callback)
+        files::send_file_from_path(
+            self.owner,
+            storage_id,
+            path,
+            parent,
+            metadata,
+            callback.into(),
+        )
     }
 
     /// Sends a local file via descriptor to the MTP device who this storage belongs to, note
@@ -525,14 +553,19 @@ impl<'a> StoragePool<'a> {
         descriptor: impl AsRawFd,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
         files::send_file_from_descriptor(
-            self.owner, storage_id, descriptor, parent, metadata, callback,
+            self.owner,
+            storage_id,
+            descriptor,
+            parent,
+            metadata,
+            callback.into(),
         )
     }
 
@@ -553,13 +586,20 @@ impl<'a> StoragePool<'a> {
         handler: H,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: Option<C>,
+        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
         H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
-        C: FnMut(u64, u64) -> bool,
+        C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
-        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata, callback)
+        files::send_file_from_handler(
+            self.owner,
+            storage_id,
+            handler,
+            parent,
+            metadata,
+            callback.into(),
+        )
     }
 }
