@@ -39,11 +39,16 @@ fn main() -> Result<(), Error> {
             modification_date: metadata.modified()?.into(),
         };
 
-        storage.send_file_from_path(path, Parent::Root, metadata, |sent, total| {
-            print!("\rProgress {}/{}", sent, total);
-            std::io::stdout().lock().flush().expect("Failed to flush");
-            CallbackReturn::Continue
-        })?;
+        storage.send_file_from_path_with_callback(
+            path,
+            Parent::Root,
+            metadata,
+            |sent, total| {
+                print!("\rProgress {}/{}", sent, total);
+                std::io::stdout().lock().flush().expect("Failed to flush");
+                CallbackReturn::Continue
+            },
+        )?;
 
         println!()
     } else {

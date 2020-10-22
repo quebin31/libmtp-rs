@@ -40,7 +40,7 @@ fn main() -> Result<(), Error> {
         let choosen: usize = read!();
 
         if let Some(file) = root_contents.get(choosen) {
-            storage.get_file_to_path(file, file.name(), |sent, total| {
+            storage.get_file_to_path_with_callback(file, file.name(), |sent, total| {
                 print!("\rProgress {}/{}", sent, total);
                 std::io::stdout().lock().flush().expect("Failed to flush");
                 CallbackReturn::Continue
