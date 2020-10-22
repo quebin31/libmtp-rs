@@ -213,44 +213,83 @@ impl<'a> Storage<'a> {
         unsafe { create_folder(self.owner, name, parent, (*self.inner).id) }
     }
 
-    /// Retrieves a file from the device storage to a local file identified by a filename.
+    /// Retrieves a file from the device storage to a local file identified by a filename. Note
+    /// that `get_file_to_path` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    pub fn get_file_to_path(&self, file: impl AsObjectId, path: impl AsRef<Path>) -> Result<()> {
+        files::get_file_to_path(self.owner, file, path)
+    }
+
+    /// Retrieves a file from the device storage to a local file identified by a filename. Note
+    /// that `get_file_to_path` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn get_file_to_path<C>(
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn get_file_to_path_with_callback<C>(
         &self,
         file: impl AsObjectId,
         path: impl AsRef<Path>,
-        callback: impl Into<Option<C>>,
+        callback: C,
     ) -> Result<()>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_path(self.owner, file, path, callback.into())
+        files::get_file_to_path_with_callback(self.owner, file, path, callback)
     }
 
-    /// Retrieves a file from the device storage to a local file identified by a descriptor.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
+    /// Retrieves a file from the device storage to a local file identified by a descriptor. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     #[cfg(unix)]
-    pub fn get_file_to_descriptor<C>(
+    pub fn get_file_to_descriptor(
         &self,
         file: impl AsObjectId,
         descriptor: impl AsRawFd,
-        callback: impl Into<Option<C>>,
+    ) -> Result<()> {
+        files::get_file_to_descriptor(self.owner, file, descriptor)
+    }
+
+    /// Retrieves a file from the device storage to a local file identified by a descriptor. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    #[cfg(unix)]
+    pub fn get_file_to_descriptor_with_callback<C>(
+        &self,
+        file: impl AsObjectId,
+        descriptor: impl AsRawFd,
+        callback: C,
     ) -> Result<()>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_descriptor(self.owner, file, descriptor, callback.into())
+        files::get_file_to_descriptor_with_callback(self.owner, file, descriptor, callback)
     }
 
-    /// Retrieves a file from the device storage and calls handler with chunks of data.
+    /// Retrieves a file from the device storage and calls handler with chunks of data. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
+    /// where the `read_len` should be modified with the amount of bytes you actually
+    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    pub fn get_file_to_handler<H>(&self, file: impl AsObjectId, handler: H) -> Result<()>
+    where
+        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+    {
+        files::get_file_to_handler(self.owner, file, handler)
+    }
+
+    /// Retrieves a file from the device storage and calls handler with chunks of data. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     ///
     /// The `handler` parameter is the function that receives the chunks of data with
     /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
@@ -258,75 +297,88 @@ impl<'a> Storage<'a> {
     /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn get_file_to_handler<H, C>(
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn get_file_to_handler_with_callback<H, C>(
         &self,
         file: impl AsObjectId,
         handler: H,
-        callback: impl Into<Option<C>>,
+        callback: C,
     ) -> Result<()>
     where
         H: FnMut(&[u8], &mut u32) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_handler(self.owner, file, handler, callback.into())
+        files::get_file_to_handler_with_callback(self.owner, file, handler, callback)
     }
 
     /// Sends a local file to the MTP device who this storage belongs to.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_path(
-            self.owner,
-            storage_id,
-            path,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_path(self.owner, storage_id, path, parent, metadata)
+    }
+
+    /// Sends a local file to the MTP device who this storage belongs to.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn send_file_from_path_with_callback<C>(
+        &self,
+        path: impl AsRef<Path>,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
+    ) -> Result<File<'a>>
+    where
+        C: FnMut(u64, u64) -> CallbackReturn,
+    {
+        let storage_id = self.id();
+        files::send_file_from_path_with_callback(
+            self.owner, storage_id, path, parent, metadata, callback,
         )
     }
 
     /// Sends a local file via descriptor to the MTP device who this storage belongs to.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
-    pub fn send_file_from_descriptor<C>(
+    pub fn send_file_from_descriptor(
         &self,
         descriptor: impl AsRawFd,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
+    ) -> Result<File<'a>> {
+        let storage_id = self.id();
+        files::send_file_from_descriptor(self.owner, storage_id, descriptor, parent, metadata)
+    }
+
+    /// Sends a local file via descriptor to the MTP device who this storage belongs to.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    #[cfg(unix)]
+    pub fn send_file_from_descriptor_with_callback<C>(
+        &self,
+        descriptor: impl AsRawFd,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
     ) -> Result<File<'a>>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_descriptor(
-            self.owner,
-            storage_id,
-            descriptor,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_descriptor_with_callback(
+            self.owner, storage_id, descriptor, parent, metadata, callback,
         )
     }
 
@@ -337,30 +389,44 @@ impl<'a> Storage<'a> {
     /// where the `write_len` should be modified with the amount of bytes you actually
     /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn send_file_from_handler<H, C>(
+    pub fn send_file_from_handler<H>(
         &self,
         handler: H,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
+    ) -> Result<File<'a>>
+    where
+        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+    {
+        let storage_id = self.id();
+        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
+    }
+
+    /// Sends a bunch of data to the MTP device who this storage belongs to.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
+    /// where the `write_len` should be modified with the amount of bytes you actually
+    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn send_file_from_handler_with_callback<H, C>(
+        &self,
+        handler: H,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
     ) -> Result<File<'a>>
     where
         H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_handler(
-            self.owner,
-            storage_id,
-            handler,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_handler_with_callback(
+            self.owner, storage_id, handler, parent, metadata, callback,
         )
     }
 }
@@ -455,50 +521,83 @@ impl<'a> StoragePool<'a> {
         create_folder(self.owner, name, parent, 0)
     }
 
-    /// Retrieves a file from the device storage to a local file identified by a filename, note
-    /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
-    /// this is because objects have unique ids across all the device.
+    /// Retrieves a file from the device storage to a local file identified by a filename. Note
+    /// that `get_file_to_path` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    pub fn get_file_to_path(&self, file: impl AsObjectId, path: impl AsRef<Path>) -> Result<()> {
+        files::get_file_to_path(self.owner, file, path)
+    }
+
+    /// Retrieves a file from the device storage to a local file identified by a filename. Note
+    /// that `get_file_to_path` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn get_file_to_path<C>(
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn get_file_to_path_with_callback<C>(
         &self,
         file: impl AsObjectId,
         path: impl AsRef<Path>,
-        callback: impl Into<Option<C>>,
+        callback: C,
     ) -> Result<()>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_path(self.owner, file, path, callback.into())
+        files::get_file_to_path_with_callback(self.owner, file, path, callback)
     }
 
-    /// Retrieves a file from the device storage to a local file identified by a descriptor, note
-    /// that this is just a convenience method since it's not necessary to depend on the `Storage`,
-    /// this is because objects have unique ids across all the device.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
+    /// Retrieves a file from the device storage to a local file identified by a descriptor. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     #[cfg(unix)]
-    pub fn get_file_to_descriptor<C>(
+    pub fn get_file_to_descriptor(
         &self,
         file: impl AsObjectId,
         descriptor: impl AsRawFd,
-        callback: impl Into<Option<C>>,
+    ) -> Result<()> {
+        files::get_file_to_descriptor(self.owner, file, descriptor)
+    }
+
+    /// Retrieves a file from the device storage to a local file identified by a descriptor. Note
+    /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    #[cfg(unix)]
+    pub fn get_file_to_descriptor_with_callback<C>(
+        &self,
+        file: impl AsObjectId,
+        descriptor: impl AsRawFd,
+        callback: C,
     ) -> Result<()>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_descriptor(self.owner, file, descriptor, callback.into())
+        files::get_file_to_descriptor_with_callback(self.owner, file, descriptor, callback)
     }
 
-    /// Retrieves a file from the device storage and calls handler with chunks of data, note that
-    /// this is just a convenience method since it's not necessary to depend on the `Storage`, this
-    /// is because objects have unique ids across all the device.
+    /// Retrieves a file from the device storage and calls handler with chunks of data. Note
+    /// that `get_file_to_handler` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
+    /// where the `read_len` should be modified with the amount of bytes you actually
+    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    pub fn get_file_to_handler<H>(&self, file: impl AsObjectId, handler: H) -> Result<()>
+    where
+        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+    {
+        files::get_file_to_handler(self.owner, file, handler)
+    }
+
+    /// Retrieves a file from the device storage and calls handler with chunks of data. Note
+    /// that `get_file_to_handler` on `Storage` and `StoragePool` are semantically the same because
+    /// objects have unique ids across all the device.
     ///
     /// The `handler` parameter is the function that receives the chunks of data with
     /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
@@ -506,77 +605,92 @@ impl<'a> StoragePool<'a> {
     /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
     ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn get_file_to_handler<H, C>(
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn get_file_to_handler_with_callback<H, C>(
         &self,
         file: impl AsObjectId,
         handler: H,
-        callback: impl Into<Option<C>>,
+        callback: C,
     ) -> Result<()>
     where
         H: FnMut(&[u8], &mut u32) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
-        files::get_file_to_handler(self.owner, file, handler, callback.into())
+        files::get_file_to_handler_with_callback(self.owner, file, handler, callback)
     }
 
     /// Sends a local file to the MTP device who this storage belongs to, note that this method
     /// will send the file to the primary storage.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
     pub fn send_file_from_path<C>(
         &self,
         path: impl AsRef<Path>,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
     ) -> Result<File<'a>>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
-        files::send_file_from_path(
-            self.owner,
-            storage_id,
-            path,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_path(self.owner, storage_id, path, parent, metadata)
+    }
+
+    /// Sends a local file to the MTP device who this storage belongs to, note that this method
+    /// will send the file to the primary storage.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn send_file_from_path_with_callback<C>(
+        &self,
+        path: impl AsRef<Path>,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
+    ) -> Result<File<'a>>
+    where
+        C: FnMut(u64, u64) -> CallbackReturn,
+    {
+        let storage_id = 0;
+        files::send_file_from_path_with_callback(
+            self.owner, storage_id, path, parent, metadata, callback,
         )
     }
 
     /// Sends a local file via descriptor to the MTP device who this storage belongs to, note
     /// that this method will send the file to the primary storage.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
     #[cfg(unix)]
-    pub fn send_file_from_descriptor<C>(
+    pub fn send_file_from_descriptor(
         &self,
         descriptor: impl AsRawFd,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
+    ) -> Result<File<'a>> {
+        let storage_id = 0;
+        files::send_file_from_descriptor(self.owner, storage_id, descriptor, parent, metadata)
+    }
+
+    /// Sends a local file via descriptor to the MTP device who this storage belongs to, note
+    /// that this method will send the file to the primary storage.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    #[cfg(unix)]
+    pub fn send_file_from_descriptor_with_callback<C>(
+        &self,
+        descriptor: impl AsRawFd,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
     ) -> Result<File<'a>>
     where
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
-        files::send_file_from_descriptor(
-            self.owner,
-            storage_id,
-            descriptor,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_descriptor_with_callback(
+            self.owner, storage_id, descriptor, parent, metadata, callback,
         )
     }
 
@@ -588,30 +702,45 @@ impl<'a> StoragePool<'a> {
     /// where the `write_len` should be modified with the amount of bytes you actually
     /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
     /// error or if you want to cancel it.
-    ///
-    /// The `callback` parameter is an optional progress function with the following
-    /// signature `(sent_bytes: u64, total_bytes: u64) -> CallbackReturn`, this way you
-    /// can check the progress and if you want to cancel operation you just return
-    /// `CallbackReturn::Cancel`.
-    pub fn send_file_from_handler<H, C>(
+    pub fn send_file_from_handler<H>(
         &self,
         handler: H,
         parent: Parent,
         metadata: FileMetadata<'_>,
-        callback: impl Into<Option<C>>,
+    ) -> Result<File<'a>>
+    where
+        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+    {
+        let storage_id = 0;
+        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
+    }
+
+    /// Sends a bunch of data to the MTP device who this storage belongs to, note that this
+    /// method will send the file to primary storage.
+    ///
+    /// The `handler` parameter is the function that receives the chunks of data with
+    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
+    /// where the `write_len` should be modified with the amount of bytes you actually
+    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
+    /// error or if you want to cancel it.
+    ///
+    /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
+    /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
+    /// want to cancel operation you just return `CallbackReturn::Cancel`.
+    pub fn send_file_from_handler_with_callback<H, C>(
+        &self,
+        handler: H,
+        parent: Parent,
+        metadata: FileMetadata<'_>,
+        callback: C,
     ) -> Result<File<'a>>
     where
         H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
-        files::send_file_from_handler(
-            self.owner,
-            storage_id,
-            handler,
-            parent,
-            metadata,
-            callback.into(),
+        files::send_file_from_handler_with_callback(
+            self.owner, storage_id, handler, parent, metadata, callback,
         )
     }
 }
