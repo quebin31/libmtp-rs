@@ -1,6 +1,8 @@
 //! Utilities that doesn't fit anywhere else, mostly contains internal crate functions
 //! (which are not public) and other useful public items.
 
+use libmtp_sys as ffi;
+
 /// Must return type on callbacks (send and get files)
 #[derive(Debug, Copy, Clone)]
 pub enum CallbackReturn {
@@ -26,7 +28,8 @@ pub(crate) unsafe extern "C" fn progress_func_handler(
 /// Must return type of send and getter handlers that deal with raw bytes.
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerReturn {
-    /// Return this if every went ok.
+    /// Return this if every went ok together with how many bytes
+    /// you read or writed.
     Ok(u32),
 
     /// Return this if there was an error.
@@ -47,17 +50,19 @@ pub(crate) unsafe extern "C" fn data_put_func_handler(
     let closure: &mut &mut dyn FnMut(&[u8]) -> HandlerReturn = std::mem::transmute(priv_);
     let data = prim_array_ptr_to_vec!(data, u8, sendlen);
 
-    match closure(&data) {
+    let ret = match closure(&data) {
         HandlerReturn::Ok(len) => {
             // Shouldn't be null
             *putlen = len;
 
-            0
+            ffi::LIBMTP_HANDLER_RETURN_OK
         }
 
-        HandlerReturn::Error => 1,
-        HandlerReturn::Cancel => 2,
-    }
+        HandlerReturn::Error => ffi::LIBMTP_HANDLER_RETURN_ERROR,
+        HandlerReturn::Cancel => ffi::LIBMTP_HANDLER_RETURN_CANCEL,
+    };
+
+    ret as u16
 }
 
 #[allow(clippy::transmute_ptr_to_ref)]
@@ -71,7 +76,7 @@ pub(crate) unsafe extern "C" fn data_get_func_handler(
     let closure: &mut &mut dyn FnMut(&mut [u8]) -> HandlerReturn = std::mem::transmute(priv_);
     let mut rsdata = vec![0 as u8; wantlen as usize];
 
-    match closure(&mut rsdata) {
+    let ret = match closure(&mut rsdata) {
         HandlerReturn::Ok(len) => {
             // Shouldn't be null
             *gotlen = len;
@@ -82,10 +87,12 @@ pub(crate) unsafe extern "C" fn data_get_func_handler(
                 wantlen as usize,
             );
 
-            0
+            ffi::LIBMTP_HANDLER_RETURN_OK
         }
 
-        HandlerReturn::Error => 1,
-        HandlerReturn::Cancel => 2,
-    }
+        HandlerReturn::Error => ffi::LIBMTP_HANDLER_RETURN_ERROR,
+        HandlerReturn::Cancel => ffi::LIBMTP_HANDLER_RETURN_CANCEL,
+    };
+
+    ret as u16
 }
