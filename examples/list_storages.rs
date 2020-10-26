@@ -1,5 +1,6 @@
 use anyhow::Error;
-use libmtp_rs::device::{raw::detect_raw_devices, StorageSort};
+use libmtp_rs::device::raw::detect_raw_devices;
+use libmtp_rs::device::StorageSort;
 
 fn main() -> Result<(), Error> {
     let raw_devices = detect_raw_devices()?;

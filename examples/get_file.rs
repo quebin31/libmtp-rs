@@ -1,10 +1,10 @@
 use anyhow::Error;
-use libmtp_rs::{
-    device::{raw::detect_raw_devices, StorageSort},
-    object::filetypes::Filetype,
-    storage::Parent,
-    util::CallbackReturn,
-};
+use libmtp_rs::device::raw::detect_raw_devices;
+use libmtp_rs::device::StorageSort;
+use libmtp_rs::object::filetypes::Filetype;
+use libmtp_rs::storage::Parent;
+use libmtp_rs::util::{CallbackReturn, HandlerReturn};
+
 use std::io::Write;
 use text_io::read;
 
@@ -40,10 +40,16 @@ fn main() -> Result<(), Error> {
         let choosen: usize = read!();
 
         if let Some(file) = root_contents.get(choosen) {
-            storage.get_file_to_path_with_callback(file, file.name(), |sent, total| {
-                print!("\rProgress {}/{}", sent, total);
-                std::io::stdout().lock().flush().expect("Failed to flush");
-                CallbackReturn::Continue
+            //storage.get_file_to_path_with_callback(file, file.name(), |sent, total| {
+            //    print!("\rProgress {}/{}", sent, total);
+            //    std::io::stdout().lock().flush().expect("Failed to flush");
+            //    CallbackReturn::Continue
+            //})?;
+            //
+
+            storage.get_file_to_handler(file, |data| {
+                println!("data: {:?}", data);
+                HandlerReturn::Cancel
             })?;
 
             println!();

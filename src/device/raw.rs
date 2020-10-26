@@ -2,19 +2,14 @@
 //! devices.
 
 use libmtp_sys as ffi;
-use std::{
-    ffi::CStr,
-    fmt::{self, Debug},
-    mem::MaybeUninit,
-};
+use std::ffi::CStr;
+use std::fmt::{self, Debug};
+use std::mem::MaybeUninit;
 
-use crate::{
-    error::{Error, MtpErrorKind},
-    internals::{maybe_init, DeviceEntry},
-    Result,
-};
-
-use super::MtpDevice;
+use crate::device::MtpDevice;
+use crate::error::{Error, MtpErrorKind};
+use crate::internals::{maybe_init, DeviceEntry};
+use crate::Result;
 
 /// This struct handles a raw device, which should be opened with `open` or `open_uncached`
 /// if you want to manage the proper MTP device.

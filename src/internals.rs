@@ -5,7 +5,8 @@ use bitflags::bitflags;
 use libmtp_sys as ffi;
 use std::ffi::CStr;
 
-use crate::{error::Error, Result};
+use crate::error::Error;
+use crate::Result;
 
 pub(crate) fn maybe_init() {
     static mut ALREADY_INIT: bool = false;

@@ -12,6 +12,9 @@ version = "0.7.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = ["libmtp-sys"]
+
 [dependencies]
 bitflags = "1.2.1"
 cfg-if = "1.0.0"

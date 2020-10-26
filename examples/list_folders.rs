@@ -1,13 +1,11 @@
 use anyhow::Error;
-use libmtp_rs::{
-    device::{raw::detect_raw_devices, StorageSort},
-    object::filetypes::Filetype,
-    object::Object,
-    storage::files::File,
-    storage::folders::Folder,
-    storage::Parent,
-    storage::Storage,
-};
+use libmtp_rs::device::raw::detect_raw_devices;
+use libmtp_rs::device::StorageSort;
+use libmtp_rs::object::filetypes::Filetype;
+use libmtp_rs::object::Object;
+use libmtp_rs::storage::files::File;
+use libmtp_rs::storage::folders::Folder;
+use libmtp_rs::storage::{Parent, Storage};
 
 fn print_folder_tree_wfolder(folder: Option<Folder>, level: usize) {
     if let Some(folder) = folder {

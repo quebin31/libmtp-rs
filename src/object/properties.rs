@@ -5,10 +5,8 @@
 use libmtp_sys as ffi;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::ToPrimitive;
-use std::{
-    ffi::CStr,
-    fmt::{self, Display},
-};
+use std::ffi::CStr;
+use std::fmt::{self, Display};
 
 /// Enumeration that holds the supported properties, this enum implements `Display` with the
 /// description of the property.

@@ -3,26 +3,22 @@
 use chrono::{DateTime, TimeZone, Utc};
 use libmtp_sys as ffi;
 use num_traits::FromPrimitive;
-use std::{
-    ffi::{CStr, CString},
-    fmt::{self, Debug},
-    path::Path,
-};
+use std::ffi::{CStr, CString};
+use std::fmt::{self, Debug};
+use std::path::Path;
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use crate::{
-    device::MtpDevice,
-    object::{filetypes::Filetype, AsObjectId, Object},
-    util::{
-        data_get_func_handler, data_put_func_handler, progress_func_handler, CallbackReturn,
-        HandlerReturn,
-    },
-    Result,
-};
-
-use super::Parent;
+use crate::device::MtpDevice;
+use crate::object::filetypes::Filetype;
+use crate::object::{AsObjectId, Object};
+use crate::storage::Parent;
+use crate::util::data_get_func_handler;
+use crate::util::data_put_func_handler;
+use crate::util::progress_func_handler;
+use crate::util::{CallbackReturn, HandlerReturn};
+use crate::Result;
 
 /// Abstraction of a file object, it implements `Object`, you may want to use
 /// this struct to create a tree representation of one storage.
@@ -178,8 +174,7 @@ where
     let path = path_to_cvec!(path);
 
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Get_File_To_File(
@@ -232,8 +227,7 @@ where
     C: FnMut(u64, u64) -> CallbackReturn,
 {
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Get_File_To_File_Descriptor(
@@ -255,30 +249,34 @@ where
 pub(crate) fn get_file_to_handler<H>(
     mtpdev: &MtpDevice,
     file: impl AsObjectId,
-    handler: H,
+    mut handler: H,
 ) -> Result<()>
 where
     H: FnMut(&[u8]) -> HandlerReturn,
 {
-    let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
-    let handler = &mut handler;
-    let handler = handler as *mut _ as *mut libc::c_void;
+    let handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
+    let mut handler_return = HandlerReturn::Ok(0);
+
+    let private = &mut (&mut handler_return, handler) as *mut _ as *mut libc::c_void;
 
     let res = unsafe {
         ffi::LIBMTP_Get_File_To_Handler(
             mtpdev.inner,
             file.as_id(),
             Some(data_put_func_handler),
-            handler,
+            private,
             None,
             std::ptr::null(),
         )
     };
 
-    if res != 0 {
+    if res != 0 && handler_return.is_error() {
         Err(mtpdev.latest_error().unwrap_or_default())
     } else {
+        if handler_return.is_cancel() {
+            let _ = mtpdev.latest_error();
+        }
+
         Ok(())
     }
 }
@@ -286,36 +284,39 @@ where
 pub(crate) fn get_file_to_handler_with_callback<H, C>(
     mtpdev: &MtpDevice,
     file: impl AsObjectId,
-    handler: H,
+    mut handler: H,
     mut callback: C,
 ) -> Result<()>
 where
     H: FnMut(&[u8]) -> HandlerReturn,
     C: FnMut(u64, u64) -> CallbackReturn,
 {
-    let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
-    let handler = &mut handler;
-    let handler = handler as *mut _ as *mut libc::c_void;
+    let handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
+    let mut handler_return = HandlerReturn::Ok(0);
+
+    let private = &mut (&mut handler_return, handler) as *mut _ as *mut libc::c_void;
 
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Get_File_To_Handler(
             mtpdev.inner,
             file.as_id(),
             Some(data_put_func_handler),
-            handler,
+            private,
             Some(progress_func_handler),
             callback,
         )
     };
 
-    if res != 0 {
+    if res != 0 && handler_return.is_error() {
         Err(mtpdev.latest_error().unwrap_or_default())
     } else {
+        if handler_return.is_cancel() {
+            let _ = mtpdev.latest_error();
+        }
+
         Ok(())
     }
 }
@@ -371,8 +372,7 @@ where
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Send_File_From_File(
@@ -441,8 +441,7 @@ where
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Send_File_From_File_Descriptor(
@@ -467,17 +466,17 @@ where
 pub(crate) fn send_file_from_handler<'a, H>(
     mtpdev: &'a MtpDevice,
     storage_id: u32,
-    handler: H,
     parent: Parent,
     metadata: FileMetadata<'_>,
+    mut handler: H,
 ) -> Result<File<'a>>
 where
     H: FnMut(&mut [u8]) -> HandlerReturn,
 {
-    let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
-    let handler = &mut handler;
-    let handler = handler as *mut _ as *mut libc::c_void;
+    let handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
+    let mut handler_return = HandlerReturn::Ok(0);
+
+    let private = &mut (&mut handler_return, handler) as *mut _ as *mut libc::c_void;
 
     let file_t = unsafe { ffi::LIBMTP_new_file_t() };
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
@@ -486,16 +485,20 @@ where
         ffi::LIBMTP_Send_File_From_Handler(
             mtpdev.inner,
             Some(data_get_func_handler),
-            handler,
+            private,
             file_t,
             None,
             std::ptr::null(),
         )
     };
 
-    if res != 0 {
+    if res != 0 && handler_return.is_error() {
         Err(mtpdev.latest_error().unwrap_or_default())
     } else {
+        if handler_return.is_cancel() {
+            let _ = mtpdev.latest_error();
+        }
+
         Ok(File {
             inner: file_t,
             owner: mtpdev,
@@ -506,41 +509,44 @@ where
 pub(crate) fn send_file_from_handler_with_callback<'a, H, C>(
     mtpdev: &'a MtpDevice,
     storage_id: u32,
-    handler: H,
     parent: Parent,
     metadata: FileMetadata<'_>,
+    mut handler: H,
     mut callback: C,
 ) -> Result<File<'a>>
 where
     H: FnMut(&mut [u8]) -> HandlerReturn,
     C: FnMut(u64, u64) -> CallbackReturn,
 {
-    let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
-    let handler = &mut handler;
-    let handler = handler as *mut _ as *mut libc::c_void;
+    let handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
+    let mut handler_return = HandlerReturn::Ok(0);
+
+    let private = &mut (&mut handler_return, handler) as *mut _ as *mut libc::c_void;
 
     let file_t = unsafe { ffi::LIBMTP_new_file_t() };
     unsafe { fill_file_t!(metadata, parent.to_id(), storage_id, file_t) };
 
     let mut callback: &mut dyn FnMut(u64, u64) -> CallbackReturn = &mut callback;
-    let callback = &mut callback;
-    let callback = callback as *mut _ as *mut libc::c_void as *const _;
+    let callback = &mut callback as *mut _ as *mut libc::c_void as *const _;
 
     let res = unsafe {
         ffi::LIBMTP_Send_File_From_Handler(
             mtpdev.inner,
             Some(data_get_func_handler),
-            handler,
+            private,
             file_t,
             Some(progress_func_handler),
             callback,
         )
     };
 
-    if res != 0 {
+    if res != 0 && handler_return.is_error() {
         Err(mtpdev.latest_error().unwrap_or_default())
     } else {
+        if handler_return.is_cancel() {
+            let _ = mtpdev.latest_error();
+        }
+
         Ok(File {
             inner: file_t,
             owner: mtpdev,

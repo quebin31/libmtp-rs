@@ -9,9 +9,9 @@ pub mod properties;
 
 use std::ffi::CString;
 
-use super::device::MtpDevice;
-
-use crate::{storage::Parent, Result};
+use crate::device::MtpDevice;
+use crate::storage::Parent;
+use crate::Result;
 
 use libmtp_sys as ffi;
 use num_traits::ToPrimitive;

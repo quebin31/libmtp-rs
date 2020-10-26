@@ -1,14 +1,13 @@
-use std::{
-    borrow::Cow,
-    ffi::{CStr, CString},
-    fmt::{self, Debug},
-};
+use std::borrow::Cow;
+use std::ffi::{CStr, CString};
+use std::fmt::{self, Debug};
 
 use libmtp_sys as ffi;
 
-use crate::{device::MtpDevice, object::Object, Result};
-
-use super::Parent;
+use crate::device::MtpDevice;
+use crate::object::Object;
+use crate::storage::Parent;
+use crate::Result;
 
 pub struct Folder<'a> {
     inner: *mut ffi::LIBMTP_folder_t,

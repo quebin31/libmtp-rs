@@ -39,18 +39,33 @@ pub enum HandlerReturn {
     Cancel,
 }
 
+impl HandlerReturn {
+    pub(crate) fn is_error(&self) -> bool {
+        matches!(&self, HandlerReturn::Error)
+    }
+
+    pub(crate) fn is_cancel(&self) -> bool {
+        matches!(&self, HandlerReturn::Cancel)
+    }
+}
+
 #[allow(clippy::transmute_ptr_to_ref)]
 pub(crate) unsafe extern "C" fn data_put_func_handler(
     _params: *mut libc::c_void,
-    priv_: *mut libc::c_void,
+    private: *mut libc::c_void,
     sendlen: u32,
     data: *mut libc::c_uchar,
     putlen: *mut u32,
 ) -> u16 {
-    let closure: &mut &mut dyn FnMut(&[u8]) -> HandlerReturn = std::mem::transmute(priv_);
+    let (handler_return, closure): &mut (
+        &mut HandlerReturn,
+        &mut dyn FnMut(&[u8]) -> HandlerReturn,
+    ) = std::mem::transmute(private);
+
     let data = prim_array_ptr_to_vec!(data, u8, sendlen);
 
-    let ret = match closure(&data) {
+    **handler_return = closure(&data);
+    let ret = match **handler_return {
         HandlerReturn::Ok(len) => {
             // Shouldn't be null
             *putlen = len;
@@ -68,15 +83,20 @@ pub(crate) unsafe extern "C" fn data_put_func_handler(
 #[allow(clippy::transmute_ptr_to_ref)]
 pub(crate) unsafe extern "C" fn data_get_func_handler(
     _params: *mut libc::c_void,
-    priv_: *mut libc::c_void,
+    private: *mut libc::c_void,
     wantlen: u32,
     data: *mut libc::c_uchar,
     gotlen: *mut u32,
 ) -> u16 {
-    let closure: &mut &mut dyn FnMut(&mut [u8]) -> HandlerReturn = std::mem::transmute(priv_);
+    let (handler_return, closure): &mut (
+        &mut HandlerReturn,
+        &mut dyn FnMut(&mut [u8]) -> HandlerReturn,
+    ) = std::mem::transmute(private);
+
     let mut rsdata = vec![0 as u8; wantlen as usize];
 
-    let ret = match closure(&mut rsdata) {
+    **handler_return = closure(&mut rsdata);
+    let ret = match **handler_return {
         HandlerReturn::Ok(len) => {
             // Shouldn't be null
             *gotlen = len;

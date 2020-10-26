@@ -9,18 +9,15 @@ use capabilities::DeviceCapability;
 use libmtp_sys as ffi;
 use num_derive::ToPrimitive;
 use num_traits::{FromPrimitive, ToPrimitive};
-use std::{
-    ffi::CString,
-    fmt::{self, Debug},
-};
+use std::ffi::CString;
+use std::fmt::{self, Debug};
 
-use crate::{
-    error::Error,
-    object::{filetypes::Filetype, properties::Property},
-    storage::StoragePool,
-    values::AllowedValues,
-    Result,
-};
+use crate::error::Error;
+use crate::object::filetypes::Filetype;
+use crate::object::properties::Property;
+use crate::storage::StoragePool;
+use crate::values::AllowedValues;
+use crate::Result;
 
 /// Sorting logic to apply after the update of storages.
 #[derive(Debug, Clone, Copy, ToPrimitive)]

@@ -10,20 +10,22 @@ use files::{File, FileMetadata};
 use libmtp_sys as ffi;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use std::{borrow::Cow, collections::HashMap, ffi::CStr};
-use std::{
-    fmt::{self, Debug},
-    path::Path,
-};
+
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::ffi::CStr;
+use std::fmt::{self, Debug};
+use std::path::Path;
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use crate::{
-    device::MtpDevice, object::AsObjectId, util::CallbackReturn, util::HandlerReturn, Result,
-};
-
-use self::folders::{create_folder, get_folder_list, get_folder_list_storage, Folder};
+use crate::device::MtpDevice;
+use crate::object::AsObjectId;
+use crate::storage::folders::Folder;
+use crate::storage::folders::{create_folder, get_folder_list, get_folder_list_storage};
+use crate::util::{CallbackReturn, HandlerReturn};
+use crate::Result;
 
 /// Internal function to retrieve files and folders from a single storage or the whole storage pool.
 fn files_and_folders<'a>(mtpdev: &'a MtpDevice, storage_id: u32, parent: Parent) -> Vec<File<'a>> {
@@ -394,7 +396,7 @@ impl<'a> Storage<'a> {
         H: FnMut(&mut [u8]) -> HandlerReturn,
     {
         let storage_id = self.id();
-        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
+        files::send_file_from_handler(self.owner, storage_id, parent, metadata, handler)
     }
 
     /// Sends a bunch of data to the MTP device who this storage belongs to.
@@ -420,7 +422,7 @@ impl<'a> Storage<'a> {
     {
         let storage_id = self.id();
         files::send_file_from_handler_with_callback(
-            self.owner, storage_id, handler, parent, metadata, callback,
+            self.owner, storage_id, parent, metadata, handler, callback,
         )
     }
 }
@@ -701,7 +703,7 @@ impl<'a> StoragePool<'a> {
         H: FnMut(&mut [u8]) -> HandlerReturn,
     {
         let storage_id = 0;
-        files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
+        files::send_file_from_handler(self.owner, storage_id, parent, metadata, handler)
     }
 
     /// Sends a bunch of data to the MTP device who this storage belongs to, note that this
@@ -728,7 +730,7 @@ impl<'a> StoragePool<'a> {
     {
         let storage_id = 0;
         files::send_file_from_handler_with_callback(
-            self.owner, storage_id, handler, parent, metadata, callback,
+            self.owner, storage_id, parent, metadata, handler, callback,
         )
     }
 }
