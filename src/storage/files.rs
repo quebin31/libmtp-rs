@@ -258,10 +258,10 @@ pub(crate) fn get_file_to_handler<H>(
     handler: H,
 ) -> Result<()>
 where
-    H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+    H: FnMut(&[u8]) -> HandlerReturn,
 {
     let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&[u8], &mut u32) -> HandlerReturn = &mut handler;
+    let mut handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
     let handler = &mut handler;
     let handler = handler as *mut _ as *mut libc::c_void;
 
@@ -290,11 +290,11 @@ pub(crate) fn get_file_to_handler_with_callback<H, C>(
     mut callback: C,
 ) -> Result<()>
 where
-    H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+    H: FnMut(&[u8]) -> HandlerReturn,
     C: FnMut(u64, u64) -> CallbackReturn,
 {
     let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&[u8], &mut u32) -> HandlerReturn = &mut handler;
+    let mut handler: &mut dyn FnMut(&[u8]) -> HandlerReturn = &mut handler;
     let handler = &mut handler;
     let handler = handler as *mut _ as *mut libc::c_void;
 
@@ -472,10 +472,10 @@ pub(crate) fn send_file_from_handler<'a, H>(
     metadata: FileMetadata<'_>,
 ) -> Result<File<'a>>
 where
-    H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+    H: FnMut(&mut [u8]) -> HandlerReturn,
 {
     let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn = &mut handler;
+    let mut handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
     let handler = &mut handler;
     let handler = handler as *mut _ as *mut libc::c_void;
 
@@ -512,11 +512,11 @@ pub(crate) fn send_file_from_handler_with_callback<'a, H, C>(
     mut callback: C,
 ) -> Result<File<'a>>
 where
-    H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+    H: FnMut(&mut [u8]) -> HandlerReturn,
     C: FnMut(u64, u64) -> CallbackReturn,
 {
     let mut handler = handler;
-    let mut handler: &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn = &mut handler;
+    let mut handler: &mut dyn FnMut(&mut [u8]) -> HandlerReturn = &mut handler;
     let handler = &mut handler;
     let handler = handler as *mut _ as *mut libc::c_void;
 

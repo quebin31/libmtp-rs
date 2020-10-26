@@ -1,9 +1,6 @@
 //! Utilities that doesn't fit anywhere else, mostly contains internal crate functions
 //! (which are not public) and other useful public items.
 
-use num_derive::ToPrimitive;
-use num_traits::ToPrimitive;
-
 /// Must return type on callbacks (send and get files)
 #[derive(Debug, Copy, Clone)]
 pub enum CallbackReturn {
@@ -27,10 +24,10 @@ pub(crate) unsafe extern "C" fn progress_func_handler(
 }
 
 /// Must return type of send and getter handlers that deal with raw bytes.
-#[derive(Debug, Copy, Clone, ToPrimitive)]
+#[derive(Debug, Copy, Clone)]
 pub enum HandlerReturn {
     /// Return this if every went ok.
-    Ok = 0,
+    Ok(u32),
 
     /// Return this if there was an error.
     Error,
@@ -47,13 +44,20 @@ pub(crate) unsafe extern "C" fn data_put_func_handler(
     data: *mut libc::c_uchar,
     putlen: *mut u32,
 ) -> u16 {
-    let closure: &mut &mut dyn FnMut(&[u8], &mut u32) -> HandlerReturn = std::mem::transmute(priv_);
-    let putlen: &mut u32 = std::mem::transmute(putlen);
+    let closure: &mut &mut dyn FnMut(&[u8]) -> HandlerReturn = std::mem::transmute(priv_);
     let data = prim_array_ptr_to_vec!(data, u8, sendlen);
 
-    closure(&data, putlen)
-        .to_u16()
-        .expect("Unexpected variant in HandlerReturn")
+    match closure(&data) {
+        HandlerReturn::Ok(len) => {
+            // Shouldn't be null
+            *putlen = len;
+
+            0
+        }
+
+        HandlerReturn::Error => 1,
+        HandlerReturn::Cancel => 2,
+    }
 }
 
 #[allow(clippy::transmute_ptr_to_ref)]
@@ -64,21 +68,24 @@ pub(crate) unsafe extern "C" fn data_get_func_handler(
     data: *mut libc::c_uchar,
     gotlen: *mut u32,
 ) -> u16 {
-    let closure: &mut &mut dyn FnMut(&mut [u8], &mut u32) -> HandlerReturn =
-        std::mem::transmute(priv_);
-
+    let closure: &mut &mut dyn FnMut(&mut [u8]) -> HandlerReturn = std::mem::transmute(priv_);
     let mut rsdata = vec![0 as u8; wantlen as usize];
-    let gotlen: &mut u32 = std::mem::transmute(gotlen);
 
-    let ret = closure(&mut rsdata, gotlen)
-        .to_u16()
-        .expect("Unexpected variant in HandlerReturn");
+    match closure(&mut rsdata) {
+        HandlerReturn::Ok(len) => {
+            // Shouldn't be null
+            *gotlen = len;
 
-    libc::memcpy(
-        data as *mut _,
-        rsdata.as_ptr() as *const _,
-        wantlen as usize,
-    );
+            libc::memcpy(
+                data as *mut _,
+                rsdata.as_ptr() as *const _,
+                wantlen as usize,
+            );
 
-    ret
+            0
+        }
+
+        HandlerReturn::Error => 1,
+        HandlerReturn::Cancel => 2,
+    }
 }

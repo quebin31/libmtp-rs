@@ -275,14 +275,12 @@ impl<'a> Storage<'a> {
     /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
     /// objects have unique ids across all the device.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
-    /// where the `read_len` should be modified with the amount of bytes you actually
-    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that receives the chunks of data with the following
+    /// signature `(data: &[u8]) -> HandlerReturn`, you should return `HandlerReturn::Ok(readed_bytes)`
+    /// if there weren't errors with the amount of bytes you read from `data`.
     pub fn get_file_to_handler<H>(&self, file: impl AsObjectId, handler: H) -> Result<()>
     where
-        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&[u8]) -> HandlerReturn,
     {
         files::get_file_to_handler(self.owner, file, handler)
     }
@@ -291,11 +289,9 @@ impl<'a> Storage<'a> {
     /// that `get_file_to_descriptor` on `Storage` and `StoragePool` are semantically the same because
     /// objects have unique ids across all the device.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
-    /// where the `read_len` should be modified with the amount of bytes you actually
-    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that receives the chunks of data with the following
+    /// signature `(data: &[u8]) -> HandlerReturn`, you should return `HandlerReturn::Ok(readed_bytes)`
+    /// if there weren't errors with the amount of bytes you read from `data`.
     ///
     /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
     /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
@@ -307,7 +303,7 @@ impl<'a> Storage<'a> {
         callback: C,
     ) -> Result<()>
     where
-        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&[u8]) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         files::get_file_to_handler_with_callback(self.owner, file, handler, callback)
@@ -384,11 +380,10 @@ impl<'a> Storage<'a> {
 
     /// Sends a bunch of data to the MTP device who this storage belongs to.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
-    /// where the `write_len` should be modified with the amount of bytes you actually
-    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that gives you a chunk to write data with the
+    /// following signature `(data: &mut [u8]) -> HandlerReturn`, you should return
+    /// `HandlerReturn::Ok(written_bytes)` if there weren't errors with the amount of bytes you
+    /// wrote to `data`.
     pub fn send_file_from_handler<H>(
         &self,
         handler: H,
@@ -396,7 +391,7 @@ impl<'a> Storage<'a> {
         metadata: FileMetadata<'_>,
     ) -> Result<File<'a>>
     where
-        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&mut [u8]) -> HandlerReturn,
     {
         let storage_id = self.id();
         files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
@@ -404,11 +399,10 @@ impl<'a> Storage<'a> {
 
     /// Sends a bunch of data to the MTP device who this storage belongs to.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
-    /// where the `write_len` should be modified with the amount of bytes you actually
-    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that gives you a chunk to write data with the
+    /// following signature `(data: &mut [u8]) -> HandlerReturn`, you should return
+    /// `HandlerReturn::Ok(written_bytes)` if there weren't errors with the amount of bytes you
+    /// wrote to `data`.
     ///
     /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
     /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
@@ -421,7 +415,7 @@ impl<'a> Storage<'a> {
         callback: C,
     ) -> Result<File<'a>>
     where
-        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&mut [u8]) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = self.id();
@@ -583,14 +577,12 @@ impl<'a> StoragePool<'a> {
     /// that `get_file_to_handler` on `Storage` and `StoragePool` are semantically the same because
     /// objects have unique ids across all the device.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
-    /// where the `read_len` should be modified with the amount of bytes you actually
-    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that receives the chunks of data with the following
+    /// signature `(data: &[u8]) -> HandlerReturn`, you should return `HandlerReturn::Ok(readed_bytes)`
+    /// if there weren't errors with the amount of bytes you read from `data`.
     pub fn get_file_to_handler<H>(&self, file: impl AsObjectId, handler: H) -> Result<()>
     where
-        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&[u8]) -> HandlerReturn,
     {
         files::get_file_to_handler(self.owner, file, handler)
     }
@@ -599,11 +591,9 @@ impl<'a> StoragePool<'a> {
     /// that `get_file_to_handler` on `Storage` and `StoragePool` are semantically the same because
     /// objects have unique ids across all the device.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &[u8], read_len: &mut u32) -> HandlerReturn`,
-    /// where the `read_len` should be modified with the amount of bytes you actually
-    /// read, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that receives the chunks of data with the following
+    /// signature `(data: &[u8]) -> HandlerReturn`, you should return `HandlerReturn::Ok(readed_bytes)`
+    /// if there weren't errors with the amount of bytes you read from `data`.
     ///
     /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
     /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
@@ -615,7 +605,7 @@ impl<'a> StoragePool<'a> {
         callback: C,
     ) -> Result<()>
     where
-        H: FnMut(&[u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&[u8]) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         files::get_file_to_handler_with_callback(self.owner, file, handler, callback)
@@ -697,11 +687,10 @@ impl<'a> StoragePool<'a> {
     /// Sends a bunch of data to the MTP device who this storage belongs to, note that this
     /// method will send the file to primary storage.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
-    /// where the `write_len` should be modified with the amount of bytes you actually
-    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that gives you a chunk to write data with the
+    /// following signature `(data: &mut [u8]) -> HandlerReturn`, you should return
+    /// `HandlerReturn::Ok(written_bytes)` if there weren't errors with the amount of bytes you
+    /// wrote to `data`.
     pub fn send_file_from_handler<H>(
         &self,
         handler: H,
@@ -709,7 +698,7 @@ impl<'a> StoragePool<'a> {
         metadata: FileMetadata<'_>,
     ) -> Result<File<'a>>
     where
-        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&mut [u8]) -> HandlerReturn,
     {
         let storage_id = 0;
         files::send_file_from_handler(self.owner, storage_id, handler, parent, metadata)
@@ -718,11 +707,10 @@ impl<'a> StoragePool<'a> {
     /// Sends a bunch of data to the MTP device who this storage belongs to, note that this
     /// method will send the file to primary storage.
     ///
-    /// The `handler` parameter is the function that receives the chunks of data with
-    /// the following signature `(data: &mut [u8], write_len: &mut u32) -> HandlerReturn`,
-    /// where the `write_len` should be modified with the amount of bytes you actually
-    /// write, the `HandlerReturn` allows you to specify if the operation was ok, had an
-    /// error or if you want to cancel it.
+    /// The `handler` parameter is a function that gives you a chunk to write data with the
+    /// following signature `(data: &mut [u8]) -> HandlerReturn`, you should return
+    /// `HandlerReturn::Ok(written_bytes)` if there weren't errors with the amount of bytes you
+    /// wrote to `data`.
     ///
     /// The `callback` parameter is a progress function with the following signature `(sent_bytes:
     /// u64, total_bytes: u64) -> CallbackReturn`, this way you can check the progress and if you
@@ -735,7 +723,7 @@ impl<'a> StoragePool<'a> {
         callback: C,
     ) -> Result<File<'a>>
     where
-        H: FnMut(&mut [u8], &mut u32) -> HandlerReturn,
+        H: FnMut(&mut [u8]) -> HandlerReturn,
         C: FnMut(u64, u64) -> CallbackReturn,
     {
         let storage_id = 0;
