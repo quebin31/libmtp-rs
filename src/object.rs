@@ -260,4 +260,57 @@ pub trait Object {
             Ok(())
         }
     }
+
+    fn get_partial_object(&self, offset: u64, maxbytes: u32) -> Result<Vec<u8>> {
+        let id = self.id();
+        let device = self.device();
+
+        let mut size = 0;
+        let mut data = std::ptr::null_mut();
+
+        let res = unsafe {
+            ffi::LIBMTP_GetPartialObject(device.inner, id, offset, maxbytes, &mut data, &mut size)
+        };
+
+        if res != 0 || data.is_null() {
+            if !data.is_null() {
+                unsafe {
+                    libc::free(data as *mut _);
+                }
+            }
+
+            Err(device.latest_error().unwrap_or_default())
+        } else {
+            let bytes = unsafe { prim_array_ptr_to_vec!(data, u8, size) };
+            unsafe {
+                libc::free(data as *mut _);
+            }
+
+            Ok(bytes)
+        }
+    }
+
+    fn send_partial_object(&self, offset: u64, data: impl AsRef<[u8]>) -> Result<()> {
+        let id = self.id();
+        let device = self.device();
+
+        let data = data.as_ref();
+        let size = data.len();
+
+        let res = unsafe {
+            ffi::LIBMTP_SendPartialObject(
+                device.inner,
+                id,
+                offset,
+                data.as_ptr() as *mut _,
+                size as u32,
+            )
+        };
+
+        if res != 0 {
+            Err(device.latest_error().unwrap_or_default())
+        } else {
+            Ok(())
+        }
+    }
 }
