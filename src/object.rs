@@ -261,6 +261,8 @@ pub trait Object {
         }
     }
 
+    /// Get partial data from an object, specifying an offset and the maximum bytes
+    /// that should be read. Note that this may return fewer bytes than the maximum.
     fn get_partial_object(&self, offset: u64, maxbytes: u32) -> Result<Vec<u8>> {
         let id = self.id();
         let device = self.device();
@@ -290,6 +292,8 @@ pub trait Object {
         }
     }
 
+    /// Send partial data to an object, specifying an offset and the data you want
+    /// to write into the object.
     fn send_partial_object(&self, offset: u64, data: impl AsRef<[u8]>) -> Result<()> {
         let id = self.id();
         let device = self.device();
