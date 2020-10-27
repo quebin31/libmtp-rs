@@ -124,6 +124,11 @@ impl<'a> Storage<'a> {
         unsafe { (*self.inner).id }
     }
 
+    /// Returns the `MtpDevice` that owns this storage
+    pub fn device(&self) -> &MtpDevice {
+        self.owner
+    }
+
     /// Returns the storage type
     pub fn storage_type(&self) -> StorageType {
         let stype = unsafe { (*self.inner).StorageType };
@@ -482,6 +487,11 @@ impl<'a> StoragePool<'a> {
 
             Self { order, pool, owner }
         }
+    }
+
+    /// Returns the `MtpDevice` that owns this storage pool
+    pub fn device(&self) -> &MtpDevice {
+        self.owner
     }
 
     /// Returns the storage that has the given id, if there's one.
