@@ -1,3 +1,5 @@
+//! Contains relevant items to handle folder objects in the device.
+
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::fmt::{self, Debug};
