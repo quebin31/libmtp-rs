@@ -16,6 +16,7 @@ use crate::error::Error;
 use crate::object::filetypes::Filetype;
 use crate::object::properties::Property;
 use crate::object::{AsObjectId, DummyObject};
+use crate::storage::files::File;
 use crate::storage::StoragePool;
 use crate::values::AllowedValues;
 use crate::Result;
@@ -465,6 +466,23 @@ impl MtpDevice {
         DummyObject {
             id: id.as_id(),
             mtpdev: self,
+        }
+    }
+
+    /// Search for a file with the given id in this device, note that you don't need to use a
+    /// Storage for this, since ids are unique across all the device.  Don't call this function
+    /// repeatedly, the search is `O(n)`and the call may involve slow USB traffic. Instead use
+    /// `Storage::files_and_folders` to cache files.
+    pub fn search_file(&self, id: impl AsObjectId) -> Result<File<'_>> {
+        let file = unsafe { ffi::LIBMTP_Get_Filemetadata(self.inner, id.as_id()) };
+
+        if file.is_null() {
+            Err(self.latest_error().unwrap_or_default())
+        } else {
+            Ok(File {
+                inner: file,
+                owner: self,
+            })
         }
     }
 
