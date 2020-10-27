@@ -49,6 +49,23 @@ impl AsObjectId for u32 {
     }
 }
 
+/// Wrapper structure that holds an object id and a reference to an `MtpDevice`, useful if you want
+/// to work with Object methods and only have an id. (see `MtpDevice::dummy_object`).
+pub struct DummyObject<'a> {
+    pub(crate) id: u32,
+    pub(crate) mtpdev: &'a MtpDevice,
+}
+
+impl Object for DummyObject<'_> {
+    fn id(&self) -> u32 {
+        self.id
+    }
+
+    fn device(&self) -> &MtpDevice {
+        self.mtpdev
+    }
+}
+
 /// Common behavior of many higher abstractions is grouped in this trait, basically everything on
 /// MTP is an object with some attributes, even though this API is exposed, it's not recommended to
 /// use it to modify or get attributes that can be managed with other specefic APIs (like files,

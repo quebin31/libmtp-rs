@@ -15,6 +15,7 @@ use std::fmt::{self, Debug};
 use crate::error::Error;
 use crate::object::filetypes::Filetype;
 use crate::object::properties::Property;
+use crate::object::{AsObjectId, DummyObject};
 use crate::storage::StoragePool;
 use crate::values::AllowedValues;
 use crate::Result;
@@ -448,6 +449,22 @@ impl MtpDevice {
                 ffi::LIBMTP_destroy_allowed_values_t(allowed_values_ptr);
                 Ok(allowed_values)
             }
+        }
+    }
+
+    /// Build a dummy object, it's useful to work with objects when we only have an
+    /// id.
+    ///
+    /// ## Example
+    /// ```no_run
+    /// let id = 30; // stored id
+    /// let dummy_object = mtp_device.dummy_object(id);
+    /// let string = dummy_object.get_string(Property::ObjectFileName);
+    /// ```
+    pub fn dummy_object(&self, id: impl AsObjectId) -> DummyObject<'_> {
+        DummyObject {
+            id: id.as_id(),
+            mtpdev: self,
         }
     }
 
