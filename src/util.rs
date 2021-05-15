@@ -93,7 +93,7 @@ pub(crate) unsafe extern "C" fn data_get_func_handler(
         &mut dyn FnMut(&mut [u8]) -> HandlerReturn,
     ) = std::mem::transmute(private);
 
-    let mut rsdata = vec![0 as u8; wantlen as usize];
+    let mut rsdata = vec![0u8; wantlen as usize];
 
     **handler_return = closure(&mut rsdata);
     let ret = match **handler_return {
