@@ -28,7 +28,7 @@ use crate::util::{CallbackReturn, HandlerReturn};
 use crate::Result;
 
 /// Internal function to retrieve files and folders from a single storage or the whole storage pool.
-fn files_and_folders<'a>(mtpdev: &'a MtpDevice, storage_id: u32, parent: Parent) -> Vec<File<'a>> {
+fn files_and_folders(mtpdev: &MtpDevice, storage_id: u32, parent: Parent) -> Vec<File> {
     let parent_id = parent.faf_id();
 
     let mut head =
@@ -132,13 +132,13 @@ impl<'a> Storage<'a> {
     /// Returns the storage type
     pub fn storage_type(&self) -> StorageType {
         let stype = unsafe { (*self.inner).StorageType };
-        StorageType::from_u16(stype).unwrap_or_else(|| StorageType::Undefined)
+        StorageType::from_u16(stype).unwrap_or(StorageType::Undefined)
     }
 
     /// Returns the file system type
     pub fn filesystem_type(&self) -> FilesystemType {
         let ftype = unsafe { (*self.inner).FilesystemType };
-        FilesystemType::from_u16(ftype).unwrap_or_else(|| FilesystemType::Undefined)
+        FilesystemType::from_u16(ftype).unwrap_or(FilesystemType::Undefined)
     }
 
     /// Returns the access capability

@@ -446,7 +446,7 @@ impl MtpDevice {
                 Err(self.latest_error().unwrap_or_default())
             } else {
                 let allowed_values =
-                    AllowedValues::from_raw(allowed_values_ptr).ok_or_else(|| Error::Unknown)?;
+                    AllowedValues::from_raw(allowed_values_ptr).ok_or(Error::Unknown)?;
                 ffi::LIBMTP_destroy_allowed_values_t(allowed_values_ptr);
                 Ok(allowed_values)
             }
