@@ -11,6 +11,8 @@ use crate::error::{Error, MtpErrorKind};
 use crate::internals::{maybe_init, DeviceEntry};
 use crate::Result;
 
+const LIBMTP_UNKNOWN_DEVICE: &str = "UNKNOWN";
+
 /// This struct handles a raw device, which should be opened with `open` or `open_uncached`
 /// if you want to manage the proper MTP device.
 pub struct RawDevice {
@@ -69,18 +71,25 @@ impl RawDevice {
 
     /// Returns the device entry of this raw device.
     pub fn device_entry(&self) -> DeviceEntry {
-        let vendor;
-        let product;
-
-        unsafe {
-            vendor = CStr::from_ptr(self.inner.device_entry.vendor);
-            product = CStr::from_ptr(self.inner.device_entry.product);
-        }
+        let vendor = unsafe {
+            self.inner.device_entry.vendor.as_ref().map(|v| {
+                CStr::from_ptr(v)
+                    .to_str()
+                    .expect("Invalid UTF-8 in music-players.h?")
+            })
+        };
+        let product = unsafe {
+            self.inner.device_entry.product.as_ref().map(|v| {
+                CStr::from_ptr(v)
+                    .to_str()
+                    .expect("Invalid UTF-8 in music-players.h?")
+            })
+        };
 
         DeviceEntry {
-            vendor: vendor.to_str().expect("Invalid UTF-8 in music-players.h?"),
+            vendor: vendor.unwrap_or(LIBMTP_UNKNOWN_DEVICE),
             vendor_id: self.inner.device_entry.vendor_id,
-            product: product.to_str().expect("Invalid UTF-8 in music-players.h?"),
+            product: product.unwrap_or(LIBMTP_UNKNOWN_DEVICE),
             product_id: self.inner.device_entry.product_id,
             device_flags: self.inner.device_entry.device_flags,
         }
