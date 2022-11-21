@@ -9,7 +9,7 @@ use std::fmt::{self, Display};
 
 /// Enumeration that holds the supported filetypes, this enum implements `Display`
 /// with the description of the file type.
-#[derive(Debug, Clone, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum Filetype {
     Folder = 0,
     Wav,
