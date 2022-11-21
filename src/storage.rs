@@ -49,7 +49,7 @@ fn files_and_folders(mtpdev: &MtpDevice, storage_id: u32, parent: Parent) -> Vec
 
 /// Represents the parent folder of an object, the top-most parent is called the "root" as in
 /// *nix like systems.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Parent {
     Root,
     Folder(u32),
@@ -71,7 +71,7 @@ impl Parent {
     }
 }
 
-#[derive(Debug, Copy, Clone, FromPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive)]
 pub enum StorageType {
     Undefined = 0,
     FixedRom,
@@ -80,7 +80,7 @@ pub enum StorageType {
     RemovableRam,
 }
 
-#[derive(Debug, Copy, Clone, FromPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive)]
 pub enum FilesystemType {
     Undefined = 0,
     GenericFlat,
@@ -88,7 +88,7 @@ pub enum FilesystemType {
     DesignCameraFilesystem,
 }
 
-#[derive(Debug, Copy, Clone, FromPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive)]
 pub enum AccessCapability {
     ReadWrite = 0,
     ReadOnly,

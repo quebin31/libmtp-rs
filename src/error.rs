@@ -6,7 +6,7 @@ use thiserror::Error as ErrorTrait;
 
 /// Enumeration of possible `libmtp` errors, check
 /// [`Error::MtpError`](enum.Error.html#variant.MtpError) for more information.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MtpErrorKind {
     General,
     PtpLayer,

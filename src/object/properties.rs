@@ -10,7 +10,7 @@ use std::fmt::{self, Display};
 
 /// Enumeration that holds the supported properties, this enum implements `Display` with the
 /// description of the property.
-#[derive(Debug, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum Property {
     StorageId = 0,
     ObjectFormat,

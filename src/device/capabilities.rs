@@ -5,7 +5,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 
 /// Supported `libmtp` device capabilities, you can test if an MTP device supports
 /// one of those with [`MtpDevice::check_capability`](../struct.MtpDevice.html#method.check_capability)
-#[derive(Debug, Clone, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum DeviceCapability {
     /// This capability tells whether you can get partial objects.
     GetPartialObject = 0,

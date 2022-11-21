@@ -22,7 +22,7 @@ use crate::values::AllowedValues;
 use crate::Result;
 
 /// Sorting logic to apply after the update of storages.
-#[derive(Debug, Clone, Copy, ToPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToPrimitive)]
 pub enum StorageSort {
     /// Do not sort the storages
     NotSorted = 0,
@@ -39,7 +39,7 @@ pub enum StorageSort {
 /// whether there isn't enough information about the storage (`OnlyIds` where retrieved).
 /// Note that `StoragePool` and `Storage` instances have knowledge about the result
 /// of `update_storage`.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum UpdateResult {
     /// No errors, everything went fine.
     Success,
@@ -58,7 +58,7 @@ pub enum UpdateResult {
 ///     BatteryLevel::OnExternalPower => println!("Using external power, connected to AC"),
 /// }
 /// ```
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, PartialEq, Eq, Clone)]
 pub enum BatteryLevel {
     /// The device is currently on battery.
     OnBattery(u8),
