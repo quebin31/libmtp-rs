@@ -108,7 +108,7 @@ impl File<'_> {
     /// Returns the latest modification date in UTC.
     pub fn modification_date(&self) -> DateTime<Utc> {
         let epoch = unsafe { (*self.inner).modificationdate };
-        Utc.timestamp(epoch, 0)
+        Utc.timestamp_opt(epoch, 0).unwrap()
     }
 
     /// Rename this file in-place.
